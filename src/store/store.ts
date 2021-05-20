@@ -5,6 +5,8 @@ import _ from "lodash";
 import authService from "../services/auth.service";
 import itemsService from "../services/items.service";
 import listsService from "../services/lists.service";
+import { ApiError } from "../types/API";
+import { Item } from "../types/items";
 import { StoreModel } from "./models";
 
 export const store = createStore<StoreModel>({
@@ -96,12 +98,12 @@ export const store = createStore<StoreModel>({
     addItem: thunk(async (actions, payload) => {
       const [item, error] = await itemsService.addItem(payload);
       if (error) {
-        return error;
+        return [null, error] as [null, ApiError];
       }
       if (item) {
         actions.append(item);
       }
-      return null;
+      return [item, null] as [Item, null];
     }),
     removeItem: thunk(async (actions, payload) => {
       const error = await itemsService.deleteItem(payload.id);
@@ -115,7 +117,7 @@ export const store = createStore<StoreModel>({
   lists: {
     lists: [],
     defaultList: computed((state) => {
-      const defaultList = state.lists.find((x) => x.default);
+      const defaultList = state.lists.find((x) => x.isDefault);
       return defaultList || null;
     }),
     setAll: action((state, payload) => {
@@ -123,9 +125,9 @@ export const store = createStore<StoreModel>({
     }),
     set: action((state, payload) => {
       const index = state.lists.findIndex((x) => x.id === payload.id);
-      if (payload.default) {
+      if (payload.isDefault) {
         state.lists.forEach((list) => {
-          list.default = false;
+          list.isDefault = false;
         });
       }
       if (index !== -1) {
@@ -135,9 +137,9 @@ export const store = createStore<StoreModel>({
       }
     }),
     append: action((state, payload) => {
-      if (payload.default) {
+      if (payload.isDefault) {
         state.lists.forEach((list) => {
-          list.default = false;
+          list.isDefault = false;
         });
       }
       state.lists.push(payload);
@@ -199,6 +201,9 @@ export const store = createStore<StoreModel>({
       if (listItem) {
         listItem.item = payload.item;
         const clonedList = _.cloneDeep(payload.list);
+        if (_.isNil(clonedList.items)) {
+          clonedList.items = [];
+        }
         clonedList.items.push(listItem);
         actions.set(clonedList);
       }
@@ -206,23 +211,42 @@ export const store = createStore<StoreModel>({
     }),
 
     removeFromList: thunk(async (actions, payload) => {
-      const error = await listsService.removeFromList({
-        listId: payload.list.id,
-        listItemId: payload.listItem.id,
-      });
-      if (error) {
-        return error;
-      }
+      if (!payload.listItem.crossed) {
+        const listItemClone = _.cloneDeep(payload.listItem);
+        listItemClone.crossed = true;
+        const [updatedListItem, error] = await listsService.updateListItem(
+          listItemClone
+        );
+        if (error) {
+          return error;
+        }
 
-      const clonedList = _.cloneDeep(payload.list);
-      const itemIndex = clonedList.items.findIndex(
-        (x) => x.id === payload.listItem.id
-      );
-      if (itemIndex !== -1) {
-        clonedList.items.splice(itemIndex, 1);
-      }
-      actions.set(clonedList);
+        const clonedList = _.cloneDeep(payload.list);
+        const itemIndex = clonedList.items.findIndex(
+          (x) => x.id === payload.listItem.id
+        );
+        if (itemIndex !== -1 && updatedListItem) {
+          clonedList.items[itemIndex] = updatedListItem;
+        }
+        actions.set(clonedList);
+      } else {
+        const error = await listsService.removeFromList({
+          listId: payload.list.id,
+          listItemId: payload.listItem.id,
+        });
+        if (error) {
+          return error;
+        }
 
+        const clonedList = _.cloneDeep(payload.list);
+        const itemIndex = clonedList.items.findIndex(
+          (x) => x.id === payload.listItem.id
+        );
+        if (itemIndex !== -1) {
+          clonedList.items.splice(itemIndex, 1);
+        }
+        actions.set(clonedList);
+      }
       return null;
     }),
   },

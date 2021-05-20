@@ -1,10 +1,10 @@
 import React from "react";
 
-interface ICardProps {
+interface IPageContainerProps {
   className?: string;
 }
 
-const Card: React.FC<ICardProps> = (props) => (
+const PageContainer: React.FC<IPageContainerProps> = (props) => (
   <>
     <div
       className={`rounded shadow py-2 px-2 bg-white ${props.className ?? ""}`}
@@ -14,4 +14,4 @@ const Card: React.FC<ICardProps> = (props) => (
   </>
 );
 
-export default Card;
+export default PageContainer;

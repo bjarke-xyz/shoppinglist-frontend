@@ -35,10 +35,16 @@ interface ItemsStore {
 
   set: Action<ItemsStore, Item[]>;
   append: Action<ItemsStore, Item>;
-  removeById: Action<ItemsStore, number>;
+  removeById: Action<ItemsStore, string>;
 
   fetch: Thunk<ItemsStore, undefined, any, {}, Promise<ApiError | null>>;
-  addItem: Thunk<ItemsStore, AddItem, any, {}, Promise<ApiError | null>>;
+  addItem: Thunk<
+    ItemsStore,
+    AddItem,
+    any,
+    {},
+    Promise<[Item | null, ApiError | null]>
+  >;
   removeItem: Thunk<ItemsStore, Item, any, {}, Promise<ApiError | null>>;
 }
 
@@ -49,7 +55,7 @@ interface ListsStore {
   setAll: Action<ListsStore, List[]>;
   set: Action<ListsStore, List>;
   append: Action<ListsStore, List>;
-  removeById: Action<ListsStore, number>;
+  removeById: Action<ListsStore, string>;
 
   fetch: Thunk<ListsStore, undefined, any, {}, Promise<ApiError | null>>;
   addList: Thunk<ListsStore, AddList, any, {}, Promise<ApiError | null>>;

@@ -1,5 +1,5 @@
 import React, { useEffect } from "react";
-import Card from "../components/common/Card";
+import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
 import { LOGIN_URL } from "../utils/constants";
 
@@ -13,12 +13,12 @@ const LoginPage = () => {
     window.location.href = LOGIN_URL;
   }, []);
   return (
-    <Card className="mx-auto mx-w-md w-full">
+    <PageContainer className="mx-auto mx-w-md w-full">
       <EmojiHeader
         src="/img/emoji/locked-with-key.svg"
         title="Redirecting to login page..."
       />
-    </Card>
+    </PageContainer>
   );
 
   // const dispatch = useStoreDispatch();

@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import "./App.css";
+import "antd/dist/antd.css";
 import Loading from "./components/common/Loading";
 import Header from "./components/Header";
 import { routes } from "./router/config";

@@ -1,5 +1,5 @@
 import React from "react";
-import Card from "./Card";
+import PageContainer from "./PageContainer";
 import EmojiHeader from "./EmojiHeader";
 
 interface ILoadingProps {
@@ -7,14 +7,16 @@ interface ILoadingProps {
 }
 
 const Loading: React.FC<ILoadingProps> = (props) => (
-  <Card
+  <PageContainer
     // eslint-disable-next-line prettier/prettier
-    className={`mx-auto max-w-3xl h-72 animate-pulse ${!props.emoji && "bg-gray-200"}`}
+    className={`mx-auto max-w-3xl h-72 animate-pulse ${
+      !props.emoji && "bg-gray-200"
+    }`}
   >
     {props.emoji && (
       <EmojiHeader src="/img/emoji/thinking-face.svg" title="Loading..." />
     )}
-  </Card>
+  </PageContainer>
 );
 
 export default Loading;

@@ -1,9 +1,9 @@
 /* eslint-disable no-alert */
 import React from "react";
-import Button from "../components/common/Button";
-import Card from "../components/common/Card";
+import { Button, message } from "antd";
+import { LogoutOutlined, SettingOutlined } from "@ant-design/icons";
+import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
-import { CogIcon, LogoutIcon } from "../components/common/Icons";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
 
 const User: React.FC = () => {
@@ -12,28 +12,31 @@ const User: React.FC = () => {
 
   return (
     <>
-      <Card className="mx-auto max-w-3xl flex flex-col justify-between">
-        <EmojiHeader
-          src="/img/emoji/waving-hand.svg"
-          title={`Hi ${user?.preferred_username}`}
-        />
+      <PageContainer className="mx-auto max-w-3xl flex flex-col justify-between">
+        <EmojiHeader src="/img/emoji/waving-hand.svg" title="" />
 
-        <div className="flex justify-between space-x-4">
+        <p>Hi {user?.preferred_username}</p>
+
+        <div className="flex justify-between space-x-2">
           <Button
-            outline
-            icon={LogoutIcon}
+            block
+            type="primary"
+            icon={<LogoutOutlined />}
             onClick={() => dispatch.auth.logout()}
-            label="Logout"
-          />
+          >
+            Logout
+          </Button>
           <Button
-            outline
+            block
             disabled
-            icon={CogIcon}
-            label="Settings"
-            onClick={() => alert("todo")}
-          />
+            type="dashed"
+            icon={<SettingOutlined />}
+            onClick={() => message.warn("TODO")}
+          >
+            Settings
+          </Button>
         </div>
-      </Card>
+      </PageContainer>
     </>
   );
 };
