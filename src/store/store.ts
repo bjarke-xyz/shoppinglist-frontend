@@ -1,5 +1,4 @@
 /* eslint-disable no-console */
-import dayjs from "dayjs";
 import { action, computed, createStore, thunk } from "easy-peasy";
 import _ from "lodash";
 import authService from "../services/auth.service";
@@ -7,6 +6,7 @@ import itemsService from "../services/items.service";
 import listsService from "../services/lists.service";
 import { ApiError } from "../types/API";
 import { Item } from "../types/items";
+import { SSOError } from "../types/SSO";
 import { StoreModel } from "./models";
 
 export const store = createStore<StoreModel>({
@@ -14,19 +14,18 @@ export const store = createStore<StoreModel>({
     const ssoError = await actions.auth.fetch();
     if (ssoError) {
       console.log({ ssoError });
-      return false;
+      return [false, ssoError] as [boolean, SSOError];
     }
 
-    const errors = await Promise.all([
+    const errors: (ApiError | null)[] = await Promise.all([
       actions.items.fetch(),
       actions.lists.fetch(),
     ]);
 
     if (errors.some((x) => x !== null)) {
-      console.log({ errors });
-      return false;
+      return [false, errors] as [boolean, (ApiError | null)[]];
     }
-    return true;
+    return [true, null] as [boolean, null];
   }),
   core: {
     loaded: false,
@@ -116,8 +115,11 @@ export const store = createStore<StoreModel>({
   },
   lists: {
     lists: [],
+    defaultListStore: null,
     defaultList: computed((state) => {
-      const defaultList = state.lists.find((x) => x.isDefault);
+      const defaultList = state.lists.find(
+        (x) => x.id === state.defaultListStore?.listId
+      );
       return defaultList || null;
     }),
     setAll: action((state, payload) => {
@@ -125,23 +127,16 @@ export const store = createStore<StoreModel>({
     }),
     set: action((state, payload) => {
       const index = state.lists.findIndex((x) => x.id === payload.id);
-      if (payload.isDefault) {
-        state.lists.forEach((list) => {
-          list.isDefault = false;
-        });
-      }
       if (index !== -1) {
         state.lists[index] = payload;
       } else {
         state.lists.push(payload);
       }
     }),
+    setDefaultList: action((state, payload) => {
+      state.defaultListStore = payload;
+    }),
     append: action((state, payload) => {
-      if (payload.isDefault) {
-        state.lists.forEach((list) => {
-          list.isDefault = false;
-        });
-      }
       state.lists.push(payload);
     }),
     removeById: action((state, payload) => {
@@ -157,6 +152,16 @@ export const store = createStore<StoreModel>({
       }
       if (lists) {
         actions.setAll(lists);
+      }
+      const [
+        defaultList,
+        defaultListError,
+      ] = await listsService.getDefaultList();
+      if (defaultListError) {
+        return defaultListError;
+      }
+      if (defaultList) {
+        actions.setDefaultList(defaultList);
       }
       return null;
     }),
@@ -177,6 +182,16 @@ export const store = createStore<StoreModel>({
       }
       if (list) {
         actions.set(list);
+      }
+      return null;
+    }),
+    updateDefaultList: thunk(async (actions, payload) => {
+      const [defaultList, error] = await listsService.setDefaultList(payload);
+      if (error) {
+        return error;
+      }
+      if (defaultList) {
+        actions.setDefaultList(defaultList);
       }
       return null;
     }),

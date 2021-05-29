@@ -3,7 +3,6 @@ import { Item } from "./items";
 export interface List {
   id: string;
   name: string;
-  isDefault: boolean;
   ownerId: string;
   createdAt: string;
   updatedAt: string;
@@ -34,6 +33,13 @@ export interface AddList {
 export interface UpdateList {
   id: string;
   name: string;
-  isDefault: boolean;
   items: ListItem[];
+}
+
+export interface DefaultList {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  listId: string;
 }

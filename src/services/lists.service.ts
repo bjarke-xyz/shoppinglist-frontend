@@ -2,6 +2,7 @@ import axios from "axios";
 import { ApiError, ApiResponse } from "../types/API";
 import {
   AddList,
+  DefaultList,
   List,
   ListItem,
   UpdateList,
@@ -20,6 +21,43 @@ class ListsService extends ApiService {
       const headers = this.authHeader;
       const resp = await axios.get<ApiResponse<List[]>>(
         `${API_URL}/api/v1/lists`,
+        { headers }
+      );
+      return [resp.data.data, null];
+    } catch (err) {
+      return [null, err?.response?.data];
+    }
+  }
+
+  async getDefaultList(): Promise<[DefaultList | null, ApiError | null]> {
+    try {
+      const refreshSuccess = await this.ensureFreshToken();
+      if (!refreshSuccess) {
+        return [null, { code: 401, error: "Token is expired" }];
+      }
+      const headers = this.authHeader;
+      const resp = await axios.get<ApiResponse<DefaultList>>(
+        `${API_URL}/api/v1/lists/default`,
+        { headers }
+      );
+      return [resp.data.data, null];
+    } catch (err) {
+      return [null, err?.response?.data];
+    }
+  }
+
+  async setDefaultList(
+    list: List
+  ): Promise<[DefaultList | null, ApiError | null]> {
+    try {
+      const refreshSuccess = await this.ensureFreshToken();
+      if (!refreshSuccess) {
+        return [null, { code: 401, error: "Token is expired" }];
+      }
+      const headers = this.authHeader;
+      const resp = await axios.put<ApiResponse<DefaultList>>(
+        `${API_URL}/api/v1/lists/${list.id}/default`,
+        null,
         { headers }
       );
       return [resp.data.data, null];

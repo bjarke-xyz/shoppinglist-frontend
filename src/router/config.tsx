@@ -1,6 +1,6 @@
 import { ComponentType, lazy, LazyExoticComponent, ReactNode } from "react";
 import Loading from "../components/common/Loading";
-import { FRONTEND_URL, LOGIN_URL, SSO_URL } from "../utils/constants";
+import { LOGIN_URL } from "../utils/constants";
 
 export interface IRoute {
   // Path, like in basic prop

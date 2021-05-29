@@ -1,5 +1,6 @@
 import dayjs from "dayjs";
 import React from "react";
+import { message } from "antd";
 import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
 import { ListContainer, ListItem } from "../components/common/List";
@@ -13,8 +14,7 @@ const Items: React.FC = () => {
   const deleteItem = async (item: Item) => {
     const error = await dispatch.items.removeItem(item);
     if (error) {
-      console.log(error);
-      alert(JSON.stringify(error));
+      message.error(error.error);
       return false;
     }
     return true;

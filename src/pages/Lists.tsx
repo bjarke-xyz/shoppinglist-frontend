@@ -1,8 +1,15 @@
-import { DeleteOutlined, EditOutlined, PlusOutlined } from "@ant-design/icons";
-import { Button, Card, Checkbox, Form, Input, message, Modal } from "antd";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  HomeFilled,
+  HomeOutlined,
+  PlusOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Form, Input, message, Modal, Popconfirm } from "antd";
 import React, { useState } from "react";
-import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
+import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
 import { List } from "../types/lists";
 
@@ -11,14 +18,17 @@ interface ListProps {
 }
 interface ListEditForm {
   name: string;
-  isDefault: boolean;
 }
 const ListWrapper: React.FC<ListProps> = ({ list }) => {
   const dispatch = useStoreDispatch();
+  const defaultList = useStoreState((state) => state.lists.defaultList);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [saveLoading, setSaveLoading] = useState(false);
+  const [defaultLoading, setDefaultLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [form] = Form.useForm<ListEditForm>();
+
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
 
   const deleteList = async () => {
     setDeleteLoading(true);
@@ -33,8 +43,16 @@ const ListWrapper: React.FC<ListProps> = ({ list }) => {
     setModalVisible(true);
     form.setFieldsValue({
       name: list.name,
-      isDefault: list.isDefault,
     });
+  };
+
+  const setDefaultList = async () => {
+    setDefaultLoading(true);
+    const error = await dispatch.lists.updateDefaultList(list);
+    if (error) {
+      message.error(error.error);
+    }
+    setDefaultLoading(false);
   };
 
   const saveList = async (values: ListEditForm) => {
@@ -65,14 +83,37 @@ const ListWrapper: React.FC<ListProps> = ({ list }) => {
           onClick={editList}
         />,
         <Button
-          key="delete"
+          key="default"
           type="text"
-          danger
           block
-          icon={<DeleteOutlined />}
-          loading={deleteLoading}
-          onClick={deleteList}
+          icon={defaultList?.id === list.id ? <HomeFilled /> : <HomeOutlined />}
+          loading={defaultLoading}
+          onClick={setDefaultList}
         />,
+        <Button
+          key="default"
+          type="text"
+          block
+          icon={<ShareAltOutlined />}
+          onClick={() => message.info("todo :)")}
+        />,
+        <Popconfirm
+          title="Are you sure?"
+          visible={deleteConfirmVisible}
+          onConfirm={deleteList}
+          okButtonProps={{ loading: deleteLoading }}
+          onCancel={() => setDeleteConfirmVisible(false)}
+        >
+          <Button
+            key="delete"
+            type="text"
+            danger
+            block
+            icon={<DeleteOutlined />}
+            loading={deleteLoading}
+            onClick={() => setDeleteConfirmVisible(true)}
+          />
+        </Popconfirm>,
       ]}
     >
       {list.name}
@@ -87,9 +128,6 @@ const ListWrapper: React.FC<ListProps> = ({ list }) => {
         <Form form={form} onFinish={saveList}>
           <Form.Item name="name" rules={[{ required: true }]}>
             <Input placeholder="List name" />
-          </Form.Item>
-          <Form.Item name="isDefault" valuePropName="checked">
-            <Checkbox>Default</Checkbox>
           </Form.Item>
         </Form>
       </Modal>

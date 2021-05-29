@@ -1,13 +1,12 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable jsx-a11y/label-has-associated-control */
+import { AutoComplete, Card, Empty, message, Spin } from "antd";
 import React, { useState } from "react";
-import _ from "lodash";
-import { AutoComplete, Button, Spin, Card, Empty } from "antd";
-import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
+import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
-import { ListItem, UpdateList } from "../types/lists";
 import { Item } from "../types/items";
+import { ListItem } from "../types/lists";
 
 const Home: React.FC = () => {
   const dispatch = useStoreDispatch();
@@ -21,8 +20,9 @@ const Home: React.FC = () => {
   const [addLoading, setAddLoading] = useState(false);
 
   const handleError = (error: unknown) => {
+    // eslint-disable-next-line no-console
     console.log({ error });
-    alert(JSON.stringify(error));
+    message.error(JSON.stringify(error));
   };
 
   const addItem = async (item: Item | null) => {
@@ -120,7 +120,7 @@ const Home: React.FC = () => {
         </div>
 
         {!defaultList?.items?.length ? (
-          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} />
+          <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No items" />
         ) : (
           <div className="space-y-2">
             {defaultList?.items
