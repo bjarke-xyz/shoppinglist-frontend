@@ -133,6 +133,30 @@ export const store = createStore<StoreModel>({
         state.lists.push(payload);
       }
     }),
+    setItem: action((state, payload) => {
+      const listIndex = state.lists.findIndex((x) => x.id === payload.list.id);
+      if (listIndex !== -1) {
+        const list = state.lists[listIndex];
+        const itemIndex = list.items.findIndex(
+          (x) => x.id === payload.listItem.id
+        );
+        if (itemIndex !== -1) {
+          list.items[itemIndex] = payload.listItem;
+        }
+      }
+    }),
+    removeItem: action((state, payload) => {
+      const listIndex = state.lists.findIndex((x) => x.id === payload.list.id);
+      if (listIndex !== -1) {
+        const list = state.lists[listIndex];
+        const itemIndex = list.items.findIndex(
+          (x) => x.id === payload.listItem.id
+        );
+        if (itemIndex !== -1) {
+          list.items.splice(itemIndex, 1);
+        }
+      }
+    }),
     setDefaultList: action((state, payload) => {
       state.defaultListStore = payload;
     }),
@@ -236,14 +260,9 @@ export const store = createStore<StoreModel>({
           return error;
         }
 
-        const clonedList = _.cloneDeep(payload.list);
-        const itemIndex = clonedList.items.findIndex(
-          (x) => x.id === payload.listItem.id
-        );
-        if (itemIndex !== -1 && updatedListItem) {
-          clonedList.items[itemIndex] = updatedListItem;
+        if (updatedListItem) {
+          actions.setItem({ list: payload.list, listItem: updatedListItem });
         }
-        actions.set(clonedList);
       } else {
         const error = await listsService.removeFromList({
           listId: payload.list.id,
@@ -252,15 +271,7 @@ export const store = createStore<StoreModel>({
         if (error) {
           return error;
         }
-
-        const clonedList = _.cloneDeep(payload.list);
-        const itemIndex = clonedList.items.findIndex(
-          (x) => x.id === payload.listItem.id
-        );
-        if (itemIndex !== -1) {
-          clonedList.items.splice(itemIndex, 1);
-        }
-        actions.set(clonedList);
+        actions.removeItem({ list: payload.list, listItem: payload.listItem });
       }
       return null;
     }),

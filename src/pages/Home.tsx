@@ -1,7 +1,9 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable jsx-a11y/label-has-associated-control */
-import { AutoComplete, Card, Empty, message, Spin } from "antd";
+import { Card, Empty, message, Spin } from "antd";
 import React, { useState } from "react";
+import { ActionMeta } from "react-select";
+import CreatableSelect from "react-select/creatable";
 import EmojiHeader from "../components/common/EmojiHeader";
 import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
@@ -13,7 +15,7 @@ const Home: React.FC = () => {
   const items = useStoreState((state) => state.items.items);
   const defaultList = useStoreState((state) => state.lists.defaultList);
 
-  const [autoCompleteValue, setAutoCompleteValue] = useState("");
+  const [value, setValue] = useState<Item | null>();
   const [removeLoading, setRemoveLoading] = useState<Record<string, boolean>>(
     {}
   );
@@ -60,7 +62,7 @@ const Home: React.FC = () => {
     const item = items.find((x) => x.id === itemId);
     if (item) {
       await addItem(item);
-      setAutoCompleteValue("");
+      setValue(null);
     } else if (itemName) {
       const [addedItem, error] = await dispatch.items.addItem({
         name: itemName,
@@ -69,18 +71,30 @@ const Home: React.FC = () => {
         handleError(error);
       } else if (addedItem) {
         await addItem(addedItem);
-        setAutoCompleteValue("");
+        setValue(null);
       }
     }
     setAddLoading(false);
   };
 
-  const autoCompleteKeyDown = async (e: React.KeyboardEvent) => {
-    const item = items.find((x) => x.name === autoCompleteValue);
-    if (e.key === "Enter") {
+  const handleOnChange = async (
+    newValue: Item | null,
+    actionMeta: ActionMeta<any>
+  ) => {
+    setValue(newValue);
+    if (newValue) {
       await autoCompleteSelect({
-        itemName: autoCompleteValue,
-        itemId: item?.id,
+        itemId: newValue.id,
+        itemName: newValue.name,
+      });
+    }
+  };
+
+  const handleOnCreate = async (newValue: string) => {
+    newValue = newValue?.trim();
+    if (newValue) {
+      await autoCompleteSelect({
+        itemName: newValue.trim(),
       });
     }
   };
@@ -95,26 +109,22 @@ const Home: React.FC = () => {
 
         <div className="mb-2">
           <Spin spinning={addLoading}>
-            <AutoComplete
-              autoFocus
-              filterOption
-              backfill
-              disabled={addLoading}
-              value={autoCompleteValue}
-              onChange={(value) => setAutoCompleteValue(value)}
-              className="w-full"
-              options={items.map((x) => ({
-                label: x.name,
-                value: x.name,
-                key: x.id,
-              }))}
-              onSelect={(value, option) =>
-                autoCompleteSelect({
-                  itemId: option.key?.toString(),
-                  itemName: value,
-                })
-              }
-              onKeyDown={(e) => autoCompleteKeyDown(e)}
+            <CreatableSelect
+              isClearable
+              isDisabled={addLoading}
+              onChange={handleOnChange}
+              onCreateOption={handleOnCreate}
+              value={value}
+              options={items}
+              getOptionLabel={(opt) => opt.name}
+              getOptionValue={(opt) => opt.id}
+              getNewOptionData={(inVal, optionLabel) => ({
+                id: "",
+                name: inVal,
+                createdAt: "",
+                ownerId: "",
+                updatedAt: "",
+              })}
             />
           </Spin>
         </div>

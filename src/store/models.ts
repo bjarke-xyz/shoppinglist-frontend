@@ -61,6 +61,8 @@ interface ListsStore {
 
   setAll: Action<ListsStore, List[]>;
   set: Action<ListsStore, List>;
+  setItem: Action<ListsStore, { list: List; listItem: ListItem }>;
+  removeItem: Action<ListsStore, { list: List; listItem: ListItem }>;
   setDefaultList: Action<ListsStore, DefaultList>;
   append: Action<ListsStore, List>;
   removeById: Action<ListsStore, string>;
