@@ -1,7 +1,6 @@
 import React, { useState } from "react";
-import Button from "./Button";
-import { InformationCircleIcon } from "./Icons";
-import Modal from "./Modal";
+import { Button, message, Modal } from "antd";
+import { InfoCircleOutlined } from "@ant-design/icons";
 
 interface IListItemProps {
   title: string;
@@ -19,6 +18,36 @@ export const ListItem: React.FC<IListItemProps> = ({
 }) => {
   const [showModal, setShowModal] = useState(false);
 
+  const closeModal = () => {
+    setShowModal(false);
+  };
+
+  const [loading, setLoading] = useState<Record<"save" | "delete", boolean>>({
+    save: false,
+    delete: false,
+  });
+  const modalOk = async () => {
+    setLoading((state) => ({ ...state, save: true }));
+    try {
+      await onSaveClick();
+    } catch (err) {
+      message.error(err?.toString());
+    }
+    setLoading((state) => ({ ...state, save: false }));
+    closeModal();
+  };
+
+  const modalDelete = async () => {
+    setLoading((state) => ({ ...state, delete: true }));
+    try {
+      await onDeleteClick();
+    } catch (err) {
+      message.error(err?.toString());
+    }
+    setLoading((state) => ({ ...state, delete: false }));
+    closeModal();
+  };
+
   return (
     <>
       <div className="border border-gray-300 p-2 rounded flex flex-row justify-between items-center">
@@ -28,22 +57,39 @@ export const ListItem: React.FC<IListItemProps> = ({
         </div>
         <div className="flex flex-col space-y-2 md:flex-row md:space-x-2 md:space-y-0">
           <Button
-            outline
-            icon={InformationCircleIcon}
+            type="primary"
+            icon={<InfoCircleOutlined />}
             onClick={() => setShowModal(true)}
           />
         </div>
       </div>
-      {showModal && (
-        <Modal
-          isOpen={showModal}
-          close={() => setShowModal(false)}
-          save={onSaveClick}
-          delete={onDeleteClick}
-        >
-          {modalChildren}
-        </Modal>
-      )}
+      <Modal
+        title="Edit list"
+        visible={showModal}
+        onOk={onSaveClick}
+        onCancel={closeModal}
+        footer={[
+          <Button
+            key="submit"
+            type="primary"
+            onClick={modalOk}
+            loading={loading.save ?? false}
+          >
+            Submit
+          </Button>,
+          <Button
+            key="delete"
+            type="primary"
+            danger
+            onClick={modalDelete}
+            loading={loading.delete ?? false}
+          >
+            Delete
+          </Button>,
+        ]}
+      >
+        {modalChildren}
+      </Modal>
     </>
   );
 };

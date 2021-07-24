@@ -1,7 +1,13 @@
 import { Action, Computed, Thunk } from "easy-peasy";
 import { ApiError } from "../types/API";
 import { AddItem, Item } from "../types/items";
-import { AddList, List, ListItem, UpdateList } from "../types/lists";
+import {
+  AddList,
+  DefaultList,
+  List,
+  ListItem,
+  UpdateList,
+} from "../types/lists";
 import { IdentityUser, SSOError } from "../types/SSO";
 
 interface CoreStore {
@@ -35,25 +41,36 @@ interface ItemsStore {
 
   set: Action<ItemsStore, Item[]>;
   append: Action<ItemsStore, Item>;
-  removeById: Action<ItemsStore, number>;
+  removeById: Action<ItemsStore, string>;
 
   fetch: Thunk<ItemsStore, undefined, any, {}, Promise<ApiError | null>>;
-  addItem: Thunk<ItemsStore, AddItem, any, {}, Promise<ApiError | null>>;
+  addItem: Thunk<
+    ItemsStore,
+    AddItem,
+    any,
+    {},
+    Promise<[Item | null, ApiError | null]>
+  >;
   removeItem: Thunk<ItemsStore, Item, any, {}, Promise<ApiError | null>>;
 }
 
 interface ListsStore {
   lists: List[];
+  defaultListStore: DefaultList | null;
   defaultList: Computed<ListsStore, List | null>;
 
   setAll: Action<ListsStore, List[]>;
   set: Action<ListsStore, List>;
+  setItem: Action<ListsStore, { list: List; listItem: ListItem }>;
+  removeItem: Action<ListsStore, { list: List; listItem: ListItem }>;
+  setDefaultList: Action<ListsStore, DefaultList>;
   append: Action<ListsStore, List>;
-  removeById: Action<ListsStore, number>;
+  removeById: Action<ListsStore, string>;
 
   fetch: Thunk<ListsStore, undefined, any, {}, Promise<ApiError | null>>;
   addList: Thunk<ListsStore, AddList, any, {}, Promise<ApiError | null>>;
   updateList: Thunk<ListsStore, UpdateList, any, {}, Promise<ApiError | null>>;
+  updateDefaultList: Thunk<ListsStore, List, any, {}, Promise<ApiError | null>>;
   removeList: Thunk<ListsStore, List, any, {}, Promise<ApiError | null>>;
 
   addToList: Thunk<
@@ -73,7 +90,13 @@ interface ListsStore {
 }
 
 export interface StoreModel {
-  fetcher: Thunk<StoreModel, undefined, any, {}, Promise<boolean>>;
+  fetcher: Thunk<
+    StoreModel,
+    undefined,
+    any,
+    {},
+    Promise<[boolean, (ApiError | null)[] | (SSOError | null) | null]>
+  >;
   core: CoreStore;
   auth: AuthStore;
   items: ItemsStore;

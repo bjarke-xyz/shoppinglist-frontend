@@ -1,6 +1,13 @@
 import axios from "axios";
 import { ApiError, ApiResponse } from "../types/API";
-import { AddList, List, ListItem, UpdateList } from "../types/lists";
+import {
+  AddList,
+  DefaultList,
+  List,
+  ListItem,
+  UpdateList,
+  UpdatelistItem,
+} from "../types/lists";
 import { API_URL } from "../utils/constants";
 import { ApiService } from "./api.service";
 
@@ -14,6 +21,43 @@ class ListsService extends ApiService {
       const headers = this.authHeader;
       const resp = await axios.get<ApiResponse<List[]>>(
         `${API_URL}/api/v1/lists`,
+        { headers }
+      );
+      return [resp.data.data, null];
+    } catch (err) {
+      return [null, err?.response?.data];
+    }
+  }
+
+  async getDefaultList(): Promise<[DefaultList | null, ApiError | null]> {
+    try {
+      const refreshSuccess = await this.ensureFreshToken();
+      if (!refreshSuccess) {
+        return [null, { code: 401, error: "Token is expired" }];
+      }
+      const headers = this.authHeader;
+      const resp = await axios.get<ApiResponse<DefaultList>>(
+        `${API_URL}/api/v1/lists/default`,
+        { headers }
+      );
+      return [resp.data.data, null];
+    } catch (err) {
+      return [null, err?.response?.data];
+    }
+  }
+
+  async setDefaultList(
+    list: List
+  ): Promise<[DefaultList | null, ApiError | null]> {
+    try {
+      const refreshSuccess = await this.ensureFreshToken();
+      if (!refreshSuccess) {
+        return [null, { code: 401, error: "Token is expired" }];
+      }
+      const headers = this.authHeader;
+      const resp = await axios.put<ApiResponse<DefaultList>>(
+        `${API_URL}/api/v1/lists/${list.id}/default`,
+        null,
         { headers }
       );
       return [resp.data.data, null];
@@ -55,14 +99,14 @@ class ListsService extends ApiService {
   }
 
   async addToList(payload: {
-    listId: number;
-    itemId: number;
+    listId: string;
+    itemId: string;
   }): Promise<[ListItem | null, ApiError | null]> {
     try {
       await this.ensureFreshToken();
       const headers = this.authHeader;
-      const resp = await axios.patch<ApiResponse<ListItem>>(
-        `${API_URL}/api/v1/lists/add/${payload.listId}/${payload.itemId}`,
+      const resp = await axios.post<ApiResponse<ListItem>>(
+        `${API_URL}/api/v1/lists/${payload.listId}/items/${payload.itemId}`,
         null,
         { headers }
       );
@@ -72,16 +116,32 @@ class ListsService extends ApiService {
     }
   }
 
+  async updateListItem(
+    payload: UpdatelistItem
+  ): Promise<[ListItem | null, ApiError | null]> {
+    try {
+      await this.ensureFreshToken();
+      const headers = this.authHeader;
+      const resp = await axios.put<ApiResponse<ListItem>>(
+        `${API_URL}/api/v1/lists/${payload.listId}/items/${payload.id}`,
+        payload,
+        { headers }
+      );
+      return [resp?.data?.data, null];
+    } catch (err) {
+      return [null, err?.response?.data];
+    }
+  }
+
   async removeFromList(payload: {
-    listId: number;
-    listItemId: number;
+    listId: string;
+    listItemId: string;
   }): Promise<ApiError | null> {
     try {
       await this.ensureFreshToken();
       const headers = this.authHeader;
-      await axios.patch<void>(
-        `${API_URL}/api/v1/lists/remove/${payload.listId}/${payload.listItemId}`,
-        null,
+      await axios.delete<void>(
+        `${API_URL}/api/v1/lists/${payload.listId}/items/${payload.listItemId}`,
         { headers }
       );
       return null;
@@ -90,7 +150,7 @@ class ListsService extends ApiService {
     }
   }
 
-  async deleteList(listId: number): Promise<ApiError | null> {
+  async deleteList(listId: string): Promise<ApiError | null> {
     try {
       await this.ensureFreshToken();
       const headers = this.authHeader;

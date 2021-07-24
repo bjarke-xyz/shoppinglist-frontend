@@ -1,145 +1,196 @@
-import dayjs from "dayjs";
+import {
+  DeleteOutlined,
+  EditOutlined,
+  HomeFilled,
+  HomeOutlined,
+  PlusOutlined,
+  ShareAltOutlined,
+} from "@ant-design/icons";
+import { Button, Card, Form, Input, message, Modal, Popconfirm } from "antd";
 import React, { useState } from "react";
-import { useForm } from "react-hook-form";
-import Alert from "../components/common/Alert";
-import Button from "../components/common/Button";
-import Card from "../components/common/Card";
 import EmojiHeader from "../components/common/EmojiHeader";
-import { PlusIcon } from "../components/common/Icons";
-import Input from "../components/common/Input";
-import { ListContainer, ListItem } from "../components/common/List";
+import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
-import { AddList, List, UpdateList } from "../types/lists";
+import { List } from "../types/lists";
 
-interface IListItemWrapperProps {
+interface ListProps {
   list: List;
 }
-const ListItemWrapper: React.FC<IListItemWrapperProps> = ({ list }) => {
+interface ListEditForm {
+  name: string;
+}
+const ListWrapper: React.FC<ListProps> = ({ list }) => {
   const dispatch = useStoreDispatch();
+  const defaultList = useStoreState((state) => state.lists.defaultList);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+  const [saveLoading, setSaveLoading] = useState(false);
+  const [defaultLoading, setDefaultLoading] = useState(false);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [form] = Form.useForm<ListEditForm>();
+
+  const [deleteConfirmVisible, setDeleteConfirmVisible] = useState(false);
+
   const deleteList = async () => {
+    setDeleteLoading(true);
     const error = await dispatch.lists.removeList(list);
     if (error) {
-      console.log(error);
-      alert(JSON.stringify(error));
-      return false;
+      message.error(error.error);
     }
-    return true;
+    setDeleteLoading(false);
   };
 
-  const {
-    register,
-    handleSubmit,
-    errors,
-    getValues,
-    setValue,
-  } = useForm<UpdateList>();
+  const editList = () => {
+    setModalVisible(true);
+    form.setFieldsValue({
+      name: list.name,
+    });
+  };
 
-  const saveList = async () => {
-    if (errors.name) {
-      return false;
-    }
-    const updateList: UpdateList = { ...getValues(), id: list.id };
-    const error = await dispatch.lists.updateList(updateList);
+  const setDefaultList = async () => {
+    setDefaultLoading(true);
+    const error = await dispatch.lists.updateDefaultList(list);
     if (error) {
-      console.log(error);
-      alert(JSON.stringify(error));
-      setValue("name", list.name);
-      return false;
+      message.error(error.error);
     }
-    return true;
+    setDefaultLoading(false);
   };
 
-  const onSubmit = handleSubmit(async (formData) => {
-    await saveList();
-  });
+  const saveList = async (values: ListEditForm) => {
+    if (values.name) {
+      setSaveLoading(true);
+      const error = await dispatch.lists.updateList({
+        ...values,
+        id: list.id,
+        items: list.items,
+      });
+      if (error) {
+        message.error(error.error);
+      }
+    }
+    setSaveLoading(false);
+    setModalVisible(false);
+  };
 
   return (
-    <ListItem
-      title={list.name}
-      subtitle={dayjs(list.createdAt).format("DD/MM/YYYY")}
-      onDeleteClick={() => deleteList()}
-      onSaveClick={() => saveList()}
-      modalChildren={
-        <form onSubmit={onSubmit}>
-          <Input
-            defaultValue={list.name}
+    <Card
+      size="small"
+      actions={[
+        <Button
+          key="edit"
+          type="text"
+          block
+          icon={<EditOutlined />}
+          onClick={editList}
+        />,
+        <Button
+          key="default"
+          type="text"
+          block
+          icon={defaultList?.id === list.id ? <HomeFilled /> : <HomeOutlined />}
+          loading={defaultLoading}
+          onClick={setDefaultList}
+        />,
+        <Button
+          key="default"
+          type="text"
+          block
+          icon={<ShareAltOutlined />}
+          onClick={() => message.info("todo :)")}
+        />,
+        <Popconfirm
+          title="Are you sure?"
+          visible={deleteConfirmVisible}
+          onConfirm={deleteList}
+          okButtonProps={{ loading: deleteLoading }}
+          onCancel={() => setDeleteConfirmVisible(false)}
+        >
+          <Button
+            key="delete"
             type="text"
-            label="Name"
-            name="name"
-            reg={register({ required: true })}
-            errors={errors.name}
+            danger
+            block
+            icon={<DeleteOutlined />}
+            loading={deleteLoading}
+            onClick={() => setDeleteConfirmVisible(true)}
           />
-          <Input
-            defaultChecked={list.default}
-            type="checkbox"
-            label="Default list"
-            name="default"
-            reg={register()}
-            errors={errors.default}
-          />
-        </form>
-      }
-    />
+        </Popconfirm>,
+      ]}
+    >
+      {list.name}
+
+      <Modal
+        title="Edit list"
+        visible={modalVisible}
+        onOk={() => saveList(form.getFieldsValue())}
+        onCancel={() => setModalVisible(false)}
+        confirmLoading={saveLoading}
+      >
+        <Form form={form} onFinish={saveList}>
+          <Form.Item name="name" rules={[{ required: true }]}>
+            <Input placeholder="List name" />
+          </Form.Item>
+        </Form>
+      </Modal>
+    </Card>
   );
 };
 
 const Lists: React.FC = () => {
   const lists = useStoreState((state) => state.lists.lists);
   const dispatch = useStoreDispatch();
-  const { register, handleSubmit, errors, setValue } = useForm<AddList>();
-  const [apiError, setApiError] = useState("");
   const [addLoading, setAddLoading] = useState(false);
 
-  const onSubmit = handleSubmit(async (formData) => {
-    setAddLoading(true);
-    const error = await dispatch.lists.addList(formData);
-    if (error) {
-      setApiError(error.error);
-    } else {
-      setApiError("");
-      setValue("name", "");
+  const [form] = Form.useForm();
+
+  const onAddFinish = async (values: { name: string }) => {
+    if (values.name) {
+      setAddLoading(true);
+      const error = await dispatch.lists.addList(values);
+      if (error) {
+        message.error(error.error);
+      } else {
+        form.setFieldsValue({ name: "" });
+      }
+      setAddLoading(false);
     }
-    setAddLoading(false);
-  });
+  };
 
   return (
     <>
-      <Card className="mx-auto max-w-3xl">
+      <PageContainer className="mx-auto max-w-3xl">
         <EmojiHeader src="/img/emoji/spiral-notepad.svg" title="Your lists" />
 
         <div className="space-y-2">
-          {apiError && (
-            <Alert color="red" title="Error" body={apiError} className="mb-4" />
-          )}
-          <form onSubmit={onSubmit} className="grid grid-cols-3 gap-2">
-            <div className="col-span-2">
-              <Input
-                label="Name"
-                name="name"
-                type="text"
-                reg={register({ required: true })}
-                errors={errors.name}
-                className="my-0"
-              />
-            </div>
-            <div className="col-span-1">
+          <Form
+            layout="inline"
+            form={form}
+            onFinish={onAddFinish}
+            style={{ display: "flex", justifyContent: "space-between" }}
+          >
+            {/* 16px = margin-right, 32px = button width */}
+            <Form.Item
+              name="name"
+              style={{ width: "calc(100% - 16px - 32px)" }}
+            >
+              <Input placeholder="List name" />
+            </Form.Item>
+            <Form.Item style={{ marginRight: 0 }}>
               <Button
+                type="primary"
+                htmlType="submit"
+                icon={<PlusOutlined />}
                 loading={addLoading}
-                label="Add"
-                icon={PlusIcon}
-                onClick={onSubmit}
-                type="submit"
               />
-            </div>
-          </form>
+            </Form.Item>
+          </Form>
 
-          <ListContainer>
+          <div className="space-y-2">
             {lists.map((list) => (
-              <ListItemWrapper key={list.id} list={list} />
+              <ListWrapper key={list.id} list={list} />
             ))}
-          </ListContainer>
+          </div>
         </div>
-      </Card>
+      </PageContainer>
     </>
   );
 };

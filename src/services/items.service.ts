@@ -35,7 +35,7 @@ class ItemsService extends ApiService {
     }
   }
 
-  async deleteItem(itemId: number): Promise<ApiError | null> {
+  async deleteItem(itemId: string): Promise<ApiError | null> {
     try {
       await this.ensureFreshToken();
       const headers = this.authHeader;

@@ -32,3 +32,7 @@ body {
   background-color: #f1f1f1;
   background-image: url("./assets/img/charlie-brown.svg");
 }
+
+svg {
+  vertical-align: baseline;
+}

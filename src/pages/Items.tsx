@@ -1,6 +1,7 @@
 import dayjs from "dayjs";
 import React from "react";
-import Card from "../components/common/Card";
+import { message } from "antd";
+import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
 import { ListContainer, ListItem } from "../components/common/List";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
@@ -13,8 +14,7 @@ const Items: React.FC = () => {
   const deleteItem = async (item: Item) => {
     const error = await dispatch.items.removeItem(item);
     if (error) {
-      console.log(error);
-      alert(JSON.stringify(error));
+      message.error(error.error);
       return false;
     }
     return true;
@@ -27,7 +27,7 @@ const Items: React.FC = () => {
 
   return (
     <>
-      <Card className="mx-auto max-w-3xl">
+      <PageContainer className="mx-auto max-w-3xl">
         <EmojiHeader src="/img/emoji/bread.svg" title="Your items" />
 
         <ListContainer>
@@ -42,7 +42,7 @@ const Items: React.FC = () => {
             />
           ))}
         </ListContainer>
-      </Card>
+      </PageContainer>
     </>
   );
 };

@@ -1,9 +1,8 @@
 import { Item } from "./items";
 
 export interface List {
-  id: number;
+  id: string;
   name: string;
-  default: boolean;
   ownerId: string;
   createdAt: string;
   updatedAt: string;
@@ -11,11 +10,20 @@ export interface List {
 }
 
 export interface ListItem {
-  id: number;
-  listId: number;
-  itemId: number;
+  id: string;
+  listId: string;
+  itemId: string;
   item: Item;
   createdAt?: string;
+
+  // Frontend properties
+  crossed: boolean;
+}
+
+export interface UpdatelistItem {
+  id: string;
+  listId: string;
+  crossed: boolean;
 }
 
 export interface AddList {
@@ -23,8 +31,15 @@ export interface AddList {
 }
 
 export interface UpdateList {
-  id: number;
+  id: string;
   name: string;
-  default: boolean;
   items: ListItem[];
+}
+
+export interface DefaultList {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userId: string;
+  listId: string;
 }

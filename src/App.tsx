@@ -1,3 +1,5 @@
+import "antd/dist/antd.css";
+import _ from "lodash";
 import React, { useEffect } from "react";
 import { useHistory, useLocation } from "react-router-dom";
 import "./App.css";
@@ -6,7 +8,6 @@ import Header from "./components/Header";
 import { routes } from "./router/config";
 import Router from "./router/Router";
 import { useStoreDispatch, useStoreState } from "./store/hooks";
-import { ApiError } from "./types/API";
 
 function App() {
   const history = useHistory();
@@ -27,7 +28,8 @@ function App() {
         if (sessionState && code) {
           const error = await dispatch.auth.loginViaCode({ code, path });
           if (error) {
-            alert(JSON.stringify(error));
+            // eslint-disable-next-line no-console
+            console.log(error);
             history.push("/login");
             dispatch.core.setLoaded(true);
             return;
@@ -38,9 +40,16 @@ function App() {
         }
 
         if (!user) {
-          const success = await dispatch.fetcher();
+          const [success, err] = await dispatch.fetcher();
           if (!success && path !== "/") {
-            history.push("/login");
+            if (_.isArray(err)) {
+              if (err.some((x) => x?.code === 401)) {
+                history.push("/login");
+              }
+            } else {
+              // if err is not array, it must be SSOError
+              history.push("/login");
+            }
           }
         }
       }
