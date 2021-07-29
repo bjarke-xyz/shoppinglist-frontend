@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import axios from "axios";
 import { IdentityUser, IToken, SSOError, Token } from "../types/SSO";
 import { FRONTEND_URL, SSO_URL } from "../utils/constants";

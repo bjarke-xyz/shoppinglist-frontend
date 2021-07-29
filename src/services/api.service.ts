@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 import axios from "axios";
 import { IToken, Token } from "../types/SSO";
 import { SSO_URL } from "../utils/constants";
@@ -35,6 +34,7 @@ export class ApiService {
   }
 
   protected logError(err: any, source: string): void {
+    // eslint-disable-next-line no-console
     console.log({ source, err, data: err?.response?.data });
   }
 
