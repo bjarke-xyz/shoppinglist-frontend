@@ -12,6 +12,8 @@ import { API_URL } from "../utils/constants";
 import { ApiService } from "./api.service";
 
 class ListsService extends ApiService {
+  private ws: WebSocket | null | undefined;
+
   async getLists(): Promise<[List[] | null, ApiError | null]> {
     try {
       const refreshSuccess = await this.ensureFreshToken();
@@ -160,6 +162,25 @@ class ListsService extends ApiService {
       return null;
     } catch (err) {
       return err?.response?.data;
+    }
+  }
+
+  async defaultListWs(): Promise<WebSocket | Error> {
+    try {
+      if (this.ws && this.ws.readyState !== this.ws.CLOSED) {
+        return this.ws;
+      }
+      await this.ensureFreshToken();
+      const wsUrl = API_URL?.replace("http", "ws");
+      const authHeaderEncoded = encodeURIComponent(
+        this.authHeader?.Authorization ?? ""
+      );
+      this.ws = new WebSocket(
+        `${wsUrl}/api/v1/lists/ws/default?Authorization=${authHeaderEncoded}`
+      );
+      return this.ws;
+    } catch (err: any) {
+      return err;
     }
   }
 }

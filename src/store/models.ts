@@ -87,6 +87,7 @@ interface ListsStore {
     {},
     Promise<ApiError | null>
   >;
+  defaultListWs: Thunk<ListsStore, void, any, {}, Promise<WebSocket | Error>>;
 }
 
 export interface StoreModel {

@@ -275,5 +275,8 @@ export const store = createStore<StoreModel>({
       }
       return null;
     }),
+    defaultListWs: thunk(async (actions, payload) =>
+      listsService.defaultListWs()
+    ),
   },
 });

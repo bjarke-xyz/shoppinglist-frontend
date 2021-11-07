@@ -1,7 +1,7 @@
 /* eslint-disable prettier/prettier */
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import { Card, Empty, message, Spin } from "antd";
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { ActionMeta } from "react-select";
 import CreatableSelect from "react-select/creatable";
 import EmojiHeader from "../components/common/EmojiHeader";
@@ -9,6 +9,7 @@ import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
 import { Item } from "../types/items";
 import { ListItem } from "../types/lists";
+import { API_URL } from "../utils/constants";
 
 const Home: React.FC = () => {
   const dispatch = useStoreDispatch();
@@ -20,6 +21,26 @@ const Home: React.FC = () => {
     {}
   );
   const [addLoading, setAddLoading] = useState(false);
+
+  const ws = useRef<WebSocket | null>(null);
+  useEffect(() => {
+    let localWs: WebSocket | null = null;
+    async function connect() {
+      const wsResp = await dispatch.lists.defaultListWs();
+      localWs = wsResp as WebSocket;
+      ws.current = wsResp as WebSocket;
+      ws.current.onerror = (e) => {
+        console.log("ws error", e);
+      };
+      ws.current.onmessage = (e) => {
+        console.log("new ws message", e);
+      };
+    }
+    connect();
+    return () => {
+      localWs?.close();
+    };
+  });
 
   const handleError = (error: unknown) => {
     // eslint-disable-next-line no-console

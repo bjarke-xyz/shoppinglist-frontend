@@ -77,7 +77,7 @@ export class ApiService {
         return true;
       }
       return true;
-    } catch (err) {
+    } catch (err: any) {
       this.logError("ensureFreshToken", err);
       if (err?.response?.data?.error_description === "Token is not active") {
         // Redirect to login page
