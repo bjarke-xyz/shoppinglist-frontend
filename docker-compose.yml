@@ -2,7 +2,7 @@ version: "3.7"
 
 services:
   frontend:
-    image: registry.bjarke.xyz/shoppinglistv4-frontend
+    image: registry.bjarke.xyz/shoppinglist-frontend
     build:
       context: ./
       args:
@@ -10,13 +10,9 @@ services:
         - REACT_APP_API_URL
         - REACT_APP_FRONTEND_URL
     networks:
-      - shoppinglistv4
       - swarm-overlay
 
 networks:
-  shoppinglistv4:
-    external: true
-    name: shoppinglistv4-backend_shoppinglistv4
   swarm-overlay:
     external: true
     name: swarm-overlay
