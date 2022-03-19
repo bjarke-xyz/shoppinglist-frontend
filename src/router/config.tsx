@@ -1,6 +1,6 @@
+import { BarsOutlined, HomeOutlined, TagsOutlined } from "@ant-design/icons";
 import { ComponentType, lazy, LazyExoticComponent, ReactNode } from "react";
 import Loading from "../components/common/Loading";
-import { LOGIN_URL } from "../utils/constants";
 
 export interface IRoute {
   // Path, like in basic prop
@@ -11,12 +11,10 @@ export interface IRoute {
    */
   externalUrl?: string;
 
-  // Exact, like in basic prop
-  exact?: boolean;
   // Preloader for lazy loading
-  fallback?: NonNullable<ReactNode> | null;
+  Fallback: NonNullable<ReactNode>;
   // Lazy Loaded component
-  component?: LazyExoticComponent<ComponentType<any>>;
+  Component?: LazyExoticComponent<ComponentType<any>>;
 
   /**
    * Redirect path.
@@ -47,55 +45,55 @@ export interface IRoute {
    */
   hidden?: boolean;
 
-  routes?: IRoute[]; // TODO: sub routes not working for some reason
+  topNav?: boolean;
+
+  Icon?: React.ReactNode;
 }
 
 export const routes: IRoute[] = [
   {
     path: "/",
-    component: lazy(() => import("../pages/Index")),
-    exact: true,
-    fallback: <Loading />,
+    Component: lazy(() => import("../pages/Index")),
+    Fallback: <Loading />,
     hidden: true,
   },
   {
     path: "/home",
-    component: lazy(() => import("../pages/Home")),
+    Component: lazy(() => import("../pages/Home")),
     requiresAuth: true,
-    fallback: <Loading />,
+    Fallback: <Loading />,
     navName: "Home",
-  },
-  {
-    path: "/items",
-    component: lazy(() => import("../pages/Items")),
-    requiresAuth: true,
-    fallback: <Loading />,
-    navName: "Items",
+    Icon: <HomeOutlined />,
   },
   {
     path: "/lists",
-    component: lazy(() => import("../pages/Lists")),
+    Component: lazy(() => import("../pages/Lists")),
     requiresAuth: true,
-    fallback: <Loading />,
+    Fallback: <Loading />,
     navName: "Lists",
+    Icon: <BarsOutlined />,
+  },
+  {
+    path: "/items",
+    Component: lazy(() => import("../pages/Items")),
+    requiresAuth: true,
+    Fallback: <Loading />,
+    navName: "Items",
+    Icon: <TagsOutlined />,
   },
   {
     path: "/login",
-    component: lazy(() => import("../pages/LoginPage")),
+    Component: lazy(() => import("../pages/LoginPage")),
     requiresNotAuth: true,
-    fallback: <Loading />,
-    hidden: true,
+    navName: "Login",
+    Fallback: <Loading />,
   },
   {
     path: "/user",
-    component: lazy(() => import("../pages/User")),
+    Component: lazy(() => import("../pages/User")),
     requiresAuth: true,
-    fallback: <Loading />,
+    Fallback: <Loading />,
     navName: "User",
-  },
-  {
-    externalUrl: LOGIN_URL,
-    navName: "Login",
-    requiresNotAuth: true,
+    topNav: true,
   },
 ];

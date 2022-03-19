@@ -1,53 +1,84 @@
-import React, { Suspense } from "react";
-import { Redirect, Route, Switch } from "react-router-dom";
-import { useStoreState } from "../store/hooks";
-import { IRoute } from "./config";
+import { useKeycloak } from "@react-keycloak/web";
+import React, { lazy, Suspense } from "react";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
+import Loading from "../components/common/Loading";
 
-interface IProps {
-  routes: IRoute[];
+function RequireAuth({ children }: { children: JSX.Element }) {
+  const { keycloak } = useKeycloak();
+  const location = useLocation();
+  if (!keycloak.authenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  return keycloak.authenticated ? children : null;
 }
 
-const RouteWithSubRoutes = (route: IRoute) => {
-  const authenticated = useStoreState((state) => state.auth.user) !== null;
+const Index = lazy(() => import("../pages/Index"));
+const Home = lazy(() => import("../pages/Home"));
+const Lists = lazy(() => import("../pages/Lists"));
+const Items = lazy(() => import("../pages/Items"));
+const Login = lazy(() => import("../pages/LoginPage"));
+const User = lazy(() => import("../pages/User"));
 
-  return (
-    <Suspense fallback={route.fallback ?? ""}>
-      {route.path && (
-        <Route
-          path={route.path}
-          exact={route.exact}
-          render={(props) =>
-            route.redirect ? (
-              <Redirect to={route.redirect} />
-            ) : route.requiresAuth ? (
-              authenticated ? (
-                route.component && (
-                  <route.component {...props} routes={route.routes} />
-                )
-              ) : (
-                <Redirect to="/login" />
-              )
-            ) : (
-              route.component && (
-                <route.component {...props} routes={route.routes} />
-              )
-            )
-          }
-        />
-      )}
-    </Suspense>
-  );
-};
-
-const Router: React.FC<IProps> = ({ routes }) => (
-  <>
-    <Switch>
-      {routes.map((route: IRoute, i) => (
-        <RouteWithSubRoutes key={i} {...route} />
-      ))}
-      <Route component={() => <h1>Not Found!</h1>} />
-    </Switch>
-  </>
+const Router: React.FC = () => (
+  <Routes>
+    <Route
+      path="/"
+      element={
+        <Suspense fallback={<Loading />}>
+          <Index />
+        </Suspense>
+      }
+    />
+    <Route
+      path="/home"
+      element={
+        <RequireAuth>
+          <Suspense fallback={<Loading />}>
+            <Home />
+          </Suspense>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/lists"
+      element={
+        <RequireAuth>
+          <Suspense fallback={<Loading />}>
+            <Lists />
+          </Suspense>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/items"
+      element={
+        <RequireAuth>
+          <Suspense fallback={<Loading />}>
+            <Items />
+          </Suspense>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/user"
+      element={
+        <RequireAuth>
+          <Suspense fallback={<Loading />}>
+            <User />
+          </Suspense>
+        </RequireAuth>
+      }
+    />
+    <Route
+      path="/login"
+      element={
+        <Suspense fallback={<Loading />}>
+          <Login />
+        </Suspense>
+      }
+    />
+    <Route path="*" element={<h1>Not found!</h1>} />
+  </Routes>
 );
 
 export default Router;

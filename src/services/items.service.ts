@@ -7,7 +7,6 @@ import { ApiService, isApiError } from "./api.service";
 class ItemsService extends ApiService {
   async getItems(): Promise<[Item[] | null, ApiError | null]> {
     try {
-      await this.ensureFreshToken();
       const headers = this.authHeader;
       const resp = await axios.get<ApiResponse<Item[]>>(
         `${API_URL}/api/v1/items`,
@@ -24,7 +23,6 @@ class ItemsService extends ApiService {
 
   async addItem(payload: AddItem): Promise<[Item | null, ApiError | null]> {
     try {
-      await this.ensureFreshToken();
       const headers = this.authHeader;
       const resp = await axios.post<ApiResponse<Item>>(
         `${API_URL}/api/v1/items`,
@@ -42,7 +40,6 @@ class ItemsService extends ApiService {
 
   async deleteItem(itemId: string): Promise<ApiError | null> {
     try {
-      await this.ensureFreshToken();
       const headers = this.authHeader;
       await axios.delete<void>(`${API_URL}/api/v1/items/${itemId}`, {
         headers,

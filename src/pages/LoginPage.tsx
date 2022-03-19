@@ -1,7 +1,8 @@
+import { useKeycloak } from "@react-keycloak/web";
 import React, { useEffect } from "react";
-import PageContainer from "../components/common/PageContainer";
 import EmojiHeader from "../components/common/EmojiHeader";
-import { LOGIN_URL } from "../utils/constants";
+import PageContainer from "../components/common/PageContainer";
+import { FRONTEND_URL } from "../utils/constants";
 
 // interface IFormInputs {
 //   email: string;
@@ -9,9 +10,12 @@ import { LOGIN_URL } from "../utils/constants";
 // }
 
 const LoginPage = () => {
+  const { keycloak } = useKeycloak();
   useEffect(() => {
-    window.location.href = LOGIN_URL;
-  }, []);
+    keycloak.login({
+      redirectUri: `${FRONTEND_URL}/home`,
+    });
+  });
   return (
     <PageContainer className="mx-auto mx-w-md w-full">
       <EmojiHeader

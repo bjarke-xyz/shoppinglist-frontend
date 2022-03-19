@@ -23,21 +23,6 @@ interface CoreStore {
 interface AuthStore {
   user: IdentityUser | null;
   setUser: Action<AuthStore, IdentityUser | null>;
-  login: Thunk<
-    AuthStore,
-    { email: string; password: string },
-    any,
-    {},
-    Promise<SSOError | null>
-  >;
-  loginViaCode: Thunk<
-    AuthStore,
-    { code: string; path: string },
-    any,
-    {},
-    Promise<SSOError | null>
-  >;
-  logout: Thunk<AuthStore>;
   fetch: Thunk<AuthStore, undefined, any, {}, Promise<SSOError | null>>;
 }
 
@@ -63,6 +48,7 @@ interface ListsStore {
   lists: List[];
   defaultListStore: DefaultList | null;
   defaultList: Computed<ListsStore, List | null>;
+  defaultListFetched: boolean;
 
   setAll: Action<ListsStore, List[]>;
   set: Action<ListsStore, List>;
@@ -71,6 +57,7 @@ interface ListsStore {
   setDefaultList: Action<ListsStore, DefaultList>;
   append: Action<ListsStore, List>;
   removeById: Action<ListsStore, string>;
+  setDefaultListFetched: Action<ListsStore, boolean>;
 
   fetch: Thunk<ListsStore, undefined, any, {}, Promise<ApiError | null>>;
   addList: Thunk<ListsStore, AddList, any, {}, Promise<ApiError | null>>;

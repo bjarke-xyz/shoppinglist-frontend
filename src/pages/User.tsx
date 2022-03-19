@@ -1,37 +1,41 @@
 /* eslint-disable no-alert */
-import React from "react";
-import { Button, message } from "antd";
 import { LogoutOutlined, SettingOutlined } from "@ant-design/icons";
-import PageContainer from "../components/common/PageContainer";
+import { useKeycloak } from "@react-keycloak/web";
+import { Button } from "antd";
+import React from "react";
 import EmojiHeader from "../components/common/EmojiHeader";
-import { useStoreDispatch, useStoreState } from "../store/hooks";
+import PageContainer from "../components/common/PageContainer";
+import { useStoreState } from "../store/hooks";
+import { FRONTEND_URL } from "../utils/constants";
 
 const User: React.FC = () => {
   const user = useStoreState((state) => state.auth.user);
-  const dispatch = useStoreDispatch();
+  const { keycloak } = useKeycloak();
 
   return (
     <>
       <PageContainer className="mx-auto max-w-3xl flex flex-col justify-between">
         <EmojiHeader src="/img/emoji/waving-hand.svg" title="" />
 
-        <p>Hi {user?.preferred_username}</p>
+        <p>Hi {user?.name}</p>
 
         <div className="flex justify-between space-x-2">
           <Button
             block
             type="primary"
             icon={<LogoutOutlined />}
-            onClick={() => dispatch.auth.logout()}
+            onClick={() =>
+              keycloak.logout({
+                redirectUri: `${FRONTEND_URL}/`,
+              })
+            }
           >
             Logout
           </Button>
           <Button
             block
-            disabled
-            type="dashed"
             icon={<SettingOutlined />}
-            onClick={() => message.warn("TODO")}
+            onClick={() => keycloak.accountManagement()}
           >
             Settings
           </Button>

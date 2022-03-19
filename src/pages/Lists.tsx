@@ -7,7 +7,7 @@ import {
   ShareAltOutlined,
 } from "@ant-design/icons";
 import { Button, Card, Form, Input, message, Modal, Popconfirm } from "antd";
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import EmojiHeader from "../components/common/EmojiHeader";
 import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";

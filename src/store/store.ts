@@ -18,14 +18,11 @@ export const store = createStore<StoreModel>({
       return [false, ssoError] as [boolean, SSOError];
     }
 
-    const errors: (ApiError | null)[] = await Promise.all([
-      actions.items.fetch(),
-      actions.lists.fetch(),
-    ]);
+    await Promise.allSettled([actions.items.fetch(), actions.lists.fetch()]);
 
-    if (errors.some((x) => x !== null)) {
-      return [false, errors] as [boolean, (ApiError | null)[]];
-    }
+    // if (errors.some((x) => x !== null)) {
+    //   return [false, errors] as [boolean, (ApiError | null)[]];
+    // }
     return [true, null] as [boolean, null];
   }),
   core: {
@@ -71,25 +68,6 @@ export const store = createStore<StoreModel>({
     user: null,
     setUser: action((state, payload) => {
       state.user = payload;
-    }),
-    login: thunk(async (actions, payload) => {
-      const [, tokenErr] = await authService.login(payload);
-      if (tokenErr) {
-        return tokenErr;
-      }
-      await actions.fetch();
-      return null;
-    }),
-    loginViaCode: thunk(async (actions, payload) => {
-      const [, tokenErr] = await authService.loginViaCode(payload);
-      if (tokenErr) {
-        return tokenErr;
-      }
-      return null;
-    }),
-    logout: thunk(async (actions) => {
-      actions.setUser(null);
-      await authService.logout();
     }),
     fetch: thunk(async (actions) => {
       const [user, userErr] = await authService.getUserInfo();
@@ -150,6 +128,7 @@ export const store = createStore<StoreModel>({
   lists: {
     lists: [],
     defaultListStore: null,
+    defaultListFetched: false,
     defaultList: computed((state) => {
       const defaultList = state.lists.find(
         (x) => x.id === state.defaultListStore?.listId
@@ -203,6 +182,9 @@ export const store = createStore<StoreModel>({
         state.lists.splice(index, 1);
       }
     }),
+    setDefaultListFetched: action((state, payload) => {
+      state.defaultListFetched = true;
+    }),
     fetch: thunk(async (actions) => {
       const [lists, error] = await listsService.getLists();
       if (error) {
@@ -215,6 +197,7 @@ export const store = createStore<StoreModel>({
         defaultList,
         defaultListError,
       ] = await listsService.getDefaultList();
+      actions.setDefaultListFetched(true);
       if (defaultListError) {
         return defaultListError;
       }

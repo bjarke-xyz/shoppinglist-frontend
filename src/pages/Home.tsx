@@ -2,9 +2,9 @@
 /* eslint-disable jsx-a11y/label-has-associated-control */
 import { Card, Empty, message, Spin } from "antd";
 import React, { useState } from "react";
+import { Link } from "react-router-dom";
 import { ActionMeta } from "react-select";
 import CreatableSelect from "react-select/creatable";
-import EmojiHeader from "../components/common/EmojiHeader";
 import PageContainer from "../components/common/PageContainer";
 import { useStoreDispatch, useStoreState } from "../store/hooks";
 import { Item } from "../types/items";
@@ -102,34 +102,36 @@ const Home: React.FC = () => {
   return (
     <>
       <PageContainer className="mx-auto max-w-3xl">
-        <EmojiHeader
-          src="/img/emoji/memo.svg"
-          title={defaultList?.name ?? "No default list chosen yet"}
-        />
+        {defaultList ? (
+          <div className="mb-2">
+            <Spin spinning={addLoading}>
+              <CreatableSelect
+                isClearable
+                isDisabled={addLoading}
+                onChange={handleOnChange}
+                onCreateOption={handleOnCreate}
+                value={value}
+                options={items}
+                getOptionLabel={(opt) => opt.name}
+                getOptionValue={(opt) => opt.id}
+                getNewOptionData={(inVal, optionLabel) => ({
+                  id: "",
+                  name: inVal,
+                  createdAt: "",
+                  ownerId: "",
+                  updatedAt: "",
+                })}
+              />
+            </Spin>
+          </div>
+        ) : (
+          <p>
+            Go to <Link to="/lists">Lists</Link> to choose a list, and press the
+            Home icon, to mark it as your default list.
+          </p>
+        )}
 
-        <div className="mb-2">
-          <Spin spinning={addLoading}>
-            <CreatableSelect
-              isClearable
-              isDisabled={addLoading}
-              onChange={handleOnChange}
-              onCreateOption={handleOnCreate}
-              value={value}
-              options={items}
-              getOptionLabel={(opt) => opt.name}
-              getOptionValue={(opt) => opt.id}
-              getNewOptionData={(inVal, optionLabel) => ({
-                id: "",
-                name: inVal,
-                createdAt: "",
-                ownerId: "",
-                updatedAt: "",
-              })}
-            />
-          </Spin>
-        </div>
-
-        {!defaultList?.items?.length ? (
+        {defaultList && !defaultList.items?.length ? (
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="No items" />
         ) : (
           <div className="space-y-2">
