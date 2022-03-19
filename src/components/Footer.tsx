@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
   const navLinkClassNames =
     "text-gray-500 hover:underline flex flex-col justify-center items-center";
   return (
-    <nav className="shadow py-1 bg-white flex justify-around">
+    <nav className="shadow pb-3 py-1 bg-white flex justify-around">
       {routes
         .filter((r) => !r.redirect)
         .filter((r) => (r.requiresAuth ? keycloak.authenticated : true))

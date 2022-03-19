@@ -3,7 +3,7 @@
   "name": "Shopping List",
   "icons": [
     {
-      "src": "img/emoji/shoppingcart.svg",
+      "src": "/img/emoji/shoppingcart.svg",
       "sizes": "any"
     }
   ],
