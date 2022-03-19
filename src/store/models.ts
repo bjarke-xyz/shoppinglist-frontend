@@ -10,11 +10,27 @@ import {
 } from "../types/lists";
 import { IdentityUser, SSOError } from "../types/SSO";
 
+type SseEventHandler = (eventData: any) => void;
+type SseEvent =
+  | "LIST_UPDATED"
+  | "LIST_ITEMS_ADDED"
+  | "LIST_ITEMS_UPDATED"
+  | "LIST_ITEMS_REMOVED";
+
 interface CoreStore {
   loaded: boolean;
   setLoaded: Action<CoreStore, boolean>;
 
   sse: EventSource | null;
+  sseEventHandlers: Record<SseEvent, SseEventHandler[]>;
+  addSseEventHandler: Action<
+    CoreStore,
+    { event: SseEvent; handler: SseEventHandler }
+  >;
+  removeSseEventHandler: Action<
+    CoreStore,
+    { event: SseEvent; handler: SseEventHandler }
+  >;
   sseIsConnecting: boolean;
   setSseIsConnecting: Action<CoreStore, boolean>;
   sseConnect: Thunk<CoreStore, undefined, any, {}, Promise<void>>;

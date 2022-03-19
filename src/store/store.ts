@@ -32,6 +32,22 @@ export const store = createStore<StoreModel>({
     }),
 
     sse: null,
+    sseEventHandlers: {
+      LIST_UPDATED: [],
+      LIST_ITEMS_ADDED: [],
+      LIST_ITEMS_UPDATED: [],
+      LIST_ITEMS_REMOVED: [],
+    },
+    addSseEventHandler: action((state, payload) => {
+      state.sseEventHandlers[payload.event].push(payload.handler);
+    }),
+    removeSseEventHandler: action((state, payload) => {
+      const handlers = state.sseEventHandlers[payload.event];
+      const index = handlers.indexOf(payload.handler);
+      if (index !== -1) {
+        handlers.splice(index, 1);
+      }
+    }),
     sseIsConnecting: false,
     setSseIsConnecting: action((state, payload) => {
       state.sseIsConnecting = payload;
