@@ -7,6 +7,7 @@ import listsService from "../services/lists.service";
 import { ApiError } from "../types/API";
 import { Item } from "../types/items";
 import { SSOError } from "../types/SSO";
+import { API_URL } from "../utils/constants";
 import { StoreModel } from "./models";
 
 export const store = createStore<StoreModel>({
@@ -31,6 +32,22 @@ export const store = createStore<StoreModel>({
     loaded: false,
     setLoaded: action((state, payload) => {
       state.loaded = payload;
+    }),
+
+    sse: null,
+    sseConnect: action((state) => {
+      if (state.sse == null || state.sse.readyState === EventSource.CLOSED) {
+        const bearerTokenBase64 = btoa(authService.getAuthToken() ?? "");
+        state.sse = new EventSource(
+          `${API_URL}/api/v1/sse?Authorization=${bearerTokenBase64}`
+        );
+        state.sse.onmessage = (event) => {
+          console.log(JSON.parse(event.data));
+        };
+        state.sse.onerror = (error) => {
+          console.error(error);
+        };
+      }
     }),
   },
   auth: {

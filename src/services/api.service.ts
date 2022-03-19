@@ -1,6 +1,19 @@
 import axios from "axios";
-import { IToken, Token } from "../types/SSO";
+import { ApiError } from "../types/API";
+import { IToken, SSOError, Token } from "../types/SSO";
 import { SSO_URL } from "../utils/constants";
+
+export function isApiError(
+  err: unknown
+): err is { response: { data: ApiError } } {
+  return !!((err as any)?.response?.data as ApiError)?.error;
+}
+
+export function isSsoError(
+  err: unknown
+): err is { response: { data: SSOError } } {
+  return !!((err as any)?.response?.data as SSOError)?.error_description;
+}
 
 export class ApiService {
   protected readonly clientId = "App";
@@ -78,10 +91,11 @@ export class ApiService {
       }
       return true;
     } catch (err) {
-      this.logError("ensureFreshToken", err);
-      if (err?.response?.data?.error_description === "Token is not active") {
-        // Redirect to login page
-      }
+      this.logError(err, "ensureFreshToken");
+      if (isSsoError(err))
+        if (err?.response?.data?.error_description === "Token is not active") {
+          // Redirect to login page
+        }
       return false;
     }
   }

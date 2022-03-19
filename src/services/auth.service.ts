@@ -1,9 +1,14 @@
 import axios from "axios";
+import { basename } from "path";
 import { IdentityUser, IToken, SSOError, Token } from "../types/SSO";
 import { FRONTEND_URL, SSO_URL } from "../utils/constants";
-import { ApiService } from "./api.service";
+import { ApiService, isSsoError } from "./api.service";
 
 class AuthService extends ApiService {
+  public getAuthToken() {
+    return this.authHeader?.Authorization;
+  }
+
   async loginViaCode(credentials: {
     code: string;
     path: string;
@@ -37,8 +42,11 @@ class AuthService extends ApiService {
         await new Promise((r) => setTimeout(r, 1000));
         return [true, null];
       } catch (error) {
-        this.logError("loginViaCode", error);
-        return [false, error?.response?.data];
+        this.logError(error, "loginViaCode");
+        if (isSsoError(error)) {
+          return [false, error.response?.data];
+        }
+        return [false, null];
       }
     }
     return [true, null];
@@ -74,8 +82,11 @@ class AuthService extends ApiService {
       await new Promise((r) => setTimeout(r, 1000));
       return [true, null];
     } catch (error) {
-      this.logError("login", error);
-      return [false, error.response.data];
+      this.logError(error, "login");
+      if (isSsoError(error)) {
+        return [false, error.response?.data];
+      }
+      return [false, null];
     }
   }
 
@@ -129,8 +140,11 @@ class AuthService extends ApiService {
       );
       return [resp.data, null];
     } catch (error) {
-      this.logError("getUserInfo", error);
-      return [null, error.response?.data];
+      this.logError(error, "getUserInfo");
+      if (isSsoError(error)) {
+        return [null, error.response?.data];
+      }
+      return [null, null];
     }
   }
 }

@@ -13,6 +13,9 @@ import { IdentityUser, SSOError } from "../types/SSO";
 interface CoreStore {
   loaded: boolean;
   setLoaded: Action<CoreStore, boolean>;
+
+  sse: EventSource | null;
+  sseConnect: Action<CoreStore>;
 }
 
 interface AuthStore {

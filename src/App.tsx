@@ -54,9 +54,11 @@ function App() {
         }
       }
       dispatch.core.setLoaded(true);
+      dispatch.core.sseConnect();
     }
     fetchData();
   });
+
   return (
     <>
       <Header />

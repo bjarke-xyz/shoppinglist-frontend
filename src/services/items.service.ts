@@ -2,7 +2,7 @@ import axios from "axios";
 import { API_URL } from "../utils/constants";
 import { AddItem, Item } from "../types/items";
 import { ApiError, ApiResponse } from "../types/API";
-import { ApiService } from "./api.service";
+import { ApiService, isApiError } from "./api.service";
 
 class ItemsService extends ApiService {
   async getItems(): Promise<[Item[] | null, ApiError | null]> {
@@ -15,7 +15,10 @@ class ItemsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -30,7 +33,10 @@ class ItemsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -43,7 +49,10 @@ class ItemsService extends ApiService {
       });
       return null;
     } catch (err) {
-      return err?.response?.data;
+      if (isApiError(err)) {
+        return err?.response?.data;
+      }
+      return null;
     }
   }
 }

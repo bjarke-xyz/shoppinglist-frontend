@@ -9,7 +9,7 @@ import {
   UpdatelistItem,
 } from "../types/lists";
 import { API_URL } from "../utils/constants";
-import { ApiService } from "./api.service";
+import { ApiService, isApiError } from "./api.service";
 
 class ListsService extends ApiService {
   async getLists(): Promise<[List[] | null, ApiError | null]> {
@@ -25,7 +25,10 @@ class ListsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -42,7 +45,10 @@ class ListsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -62,7 +68,10 @@ class ListsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -77,7 +86,10 @@ class ListsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -94,7 +106,10 @@ class ListsService extends ApiService {
       );
       return [resp.data.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -112,7 +127,10 @@ class ListsService extends ApiService {
       );
       return [resp?.data?.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -129,7 +147,10 @@ class ListsService extends ApiService {
       );
       return [resp?.data?.data, null];
     } catch (err) {
-      return [null, err?.response?.data];
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
     }
   }
 
@@ -146,7 +167,10 @@ class ListsService extends ApiService {
       );
       return null;
     } catch (err) {
-      return err?.response?.data;
+      if (isApiError(err)) {
+        return err?.response?.data;
+      }
+      return null;
     }
   }
 
@@ -159,7 +183,10 @@ class ListsService extends ApiService {
       });
       return null;
     } catch (err) {
-      return err?.response?.data;
+      if (isApiError(err)) {
+        return err?.response?.data;
+      }
+      return null;
     }
   }
 }
