@@ -9,7 +9,7 @@ import reportWebVitals from "./reportWebVitals";
 import { store } from "./store/store";
 import keycloak, { initOptions } from "./Keycloak";
 
-(window as any).enableKeycloakLogging = true;
+(window as any).enableKeycloakLogging = false;
 
 const eventLogger = (event: unknown, error: unknown) => {
   if ((window as any).enableKeycloakLogging) {
