@@ -9,12 +9,18 @@ import reportWebVitals from "./reportWebVitals";
 import { store } from "./store/store";
 import keycloak, { initOptions } from "./Keycloak";
 
+(window as any).enableKeycloakLogging = true;
+
 const eventLogger = (event: unknown, error: unknown) => {
-  // console.log("onKeycloakEvent", event, error);
+  if ((window as any).enableKeycloakLogging) {
+    console.log("onKeycloakEvent", event, error);
+  }
 };
 
 const tokenLogger = (tokens: unknown) => {
-  // console.log("onKeycloakTokens", tokens);
+  if ((window as any).enableKeycloakLogging) {
+    console.log("onKeycloakTokens", tokens);
+  }
 };
 
 ReactDOM.render(
