@@ -15,7 +15,9 @@ interface CoreStore {
   setLoaded: Action<CoreStore, boolean>;
 
   sse: EventSource | null;
-  sseConnect: Action<CoreStore>;
+  sseIsConnecting: boolean;
+  setSseIsConnecting: Action<CoreStore, boolean>;
+  sseConnect: Thunk<CoreStore, undefined, any, {}, Promise<void>>;
 }
 
 interface AuthStore {

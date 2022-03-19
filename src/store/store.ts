@@ -35,17 +35,34 @@ export const store = createStore<StoreModel>({
     }),
 
     sse: null,
-    sseConnect: action((state) => {
+    sseIsConnecting: false,
+    setSseIsConnecting: action((state, payload) => {
+      state.sseIsConnecting = payload;
+    }),
+    sseConnect: thunk(async (actions, payload, helpers) => {
+      const state = helpers.getState();
+      if (state.sseIsConnecting) {
+        return;
+      }
+      actions.setSseIsConnecting(true);
       if (state.sse == null || state.sse.readyState === EventSource.CLOSED) {
-        const bearerTokenBase64 = btoa(authService.getAuthToken() ?? "");
+        const [sseTicket, apiErr] = await authService.getSseTicket();
+        if (apiErr != null) {
+          console.log("Could not get sse ticket", apiErr);
+          return;
+        }
         state.sse = new EventSource(
-          `${API_URL}/api/v1/sse?Authorization=${bearerTokenBase64}`
+          `${API_URL}/api/v1/sse/events?ticket=${sseTicket}`
         );
+        state.sse.onopen = (event) => {
+          actions.setSseIsConnecting(false);
+        };
         state.sse.onmessage = (event) => {
           console.log(JSON.parse(event.data));
         };
-        state.sse.onerror = (error) => {
-          console.error(error);
+        state.sse.onerror = (err) => {
+          actions.setSseIsConnecting(false);
+          console.error(err);
         };
       }
     }),

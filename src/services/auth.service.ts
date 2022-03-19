@@ -1,12 +1,31 @@
 import axios from "axios";
 import { basename } from "path";
+import { ApiError, ApiResponse } from "../types/API";
 import { IdentityUser, IToken, SSOError, Token } from "../types/SSO";
-import { FRONTEND_URL, SSO_URL } from "../utils/constants";
-import { ApiService, isSsoError } from "./api.service";
+import { API_URL, FRONTEND_URL, SSO_URL } from "../utils/constants";
+import { ApiService, isApiError, isSsoError } from "./api.service";
 
 class AuthService extends ApiService {
   public getAuthToken() {
     return this.authHeader?.Authorization;
+  }
+
+  public async getSseTicket(): Promise<[string | null, ApiError | null]> {
+    try {
+      await this.ensureFreshToken();
+      const headers = this.authHeader;
+      const resp = await axios.post<ApiResponse<string>>(
+        `${API_URL}/api/v1/sse/ticket/`,
+        null,
+        { headers }
+      );
+      return [resp.data.data, null];
+    } catch (err) {
+      if (isApiError(err)) {
+        return [null, err?.response?.data];
+      }
+      return [null, null];
+    }
   }
 
   async loginViaCode(credentials: {
