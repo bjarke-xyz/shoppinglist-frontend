@@ -32,6 +32,8 @@ export const store = createStore<StoreModel>({
     }),
 
     sse: null,
+    sseConnectTry: 0,
+    sseReconnectTimeoutId: null,
     sseEventHandlers: {
       LIST_UPDATED: [],
       LIST_ITEMS_ADDED: [],
@@ -52,32 +54,53 @@ export const store = createStore<StoreModel>({
     setSseIsConnecting: action((state, payload) => {
       state.sseIsConnecting = payload;
     }),
+    setSseConnectTry: action((state, payload) => {
+      state.sseConnectTry = payload;
+    }),
     sseConnect: thunk(async (actions, payload, helpers) => {
-      const state = helpers.getState();
-      if (state.sseIsConnecting) {
+      const { sseIsConnecting } = helpers.getState();
+      if (sseIsConnecting) {
         return;
       }
-      actions.setSseIsConnecting(true);
-      if (state.sse == null || state.sse.readyState === EventSource.CLOSED) {
-        const [sseTicket, apiErr] = await authService.getSseTicket();
-        if (apiErr != null) {
-          console.log("Could not get sse ticket", apiErr);
-          return;
+
+      async function doConnect() {
+        console.log("Connecting to SSE");
+        actions.setSseIsConnecting(true);
+        const state = helpers.getState();
+        if (state.sse == null || state.sse.readyState === EventSource.CLOSED) {
+          const [sseTicket, apiErr] = await authService.getSseTicket();
+          if (apiErr != null) {
+            console.log("Could not get sse ticket", apiErr);
+          }
+          state.sse = new EventSource(
+            `${API_URL}/api/v1/sse/events?ticket=${sseTicket}`
+          );
+          state.sse.onopen = (event) => {
+            actions.setSseIsConnecting(false);
+            actions.setSseConnectTry(0);
+          };
+          state.sse.onmessage = (event) => {
+            console.log(JSON.parse(event.data));
+            actions.setSseConnectTry(0);
+          };
+          state.sse.onerror = (err) => {
+            actions.setSseIsConnecting(false);
+            console.error(err);
+            if (state.sseConnectTry < 20) {
+              actions.setSseConnectTry(state.sseConnectTry + 1);
+            } else {
+              actions.setSseConnectTry(0);
+            }
+            const waitTimeMs = state.sseConnectTry * 100;
+            console.log(`waiting ${waitTimeMs}ms before reconnecting`);
+            clearTimeout(state.sseReconnectTimeoutId as number | undefined);
+            state.sseReconnectTimeoutId = setTimeout(() => {
+              doConnect();
+            }, waitTimeMs);
+          };
         }
-        state.sse = new EventSource(
-          `${API_URL}/api/v1/sse/events?ticket=${sseTicket}`
-        );
-        state.sse.onopen = (event) => {
-          actions.setSseIsConnecting(false);
-        };
-        state.sse.onmessage = (event) => {
-          console.log(JSON.parse(event.data));
-        };
-        state.sse.onerror = (err) => {
-          actions.setSseIsConnecting(false);
-          console.error(err);
-        };
       }
+      await doConnect();
     }),
   },
   auth: {

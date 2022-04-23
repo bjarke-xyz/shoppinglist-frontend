@@ -22,6 +22,9 @@ interface CoreStore {
   setLoaded: Action<CoreStore, boolean>;
 
   sse: EventSource | null;
+  sseConnectTry: number;
+  // eslint-disable-next-line no-undef
+  sseReconnectTimeoutId: number | undefined | null | NodeJS.Timeout;
   sseEventHandlers: Record<SseEvent, SseEventHandler[]>;
   addSseEventHandler: Action<
     CoreStore,
@@ -34,6 +37,7 @@ interface CoreStore {
   sseIsConnecting: boolean;
   setSseIsConnecting: Action<CoreStore, boolean>;
   sseConnect: Thunk<CoreStore, undefined, any, {}, Promise<void>>;
+  setSseConnectTry: Action<CoreStore, number>;
 }
 
 interface AuthStore {
