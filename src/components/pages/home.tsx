@@ -3,6 +3,7 @@ import {
   Badge,
   Box,
   Button,
+  Checkbox,
   Drawer,
   DrawerBody,
   DrawerContent,
@@ -11,38 +12,23 @@ import {
   Input,
   Text,
   useDisclosure,
+  useMenuItem,
 } from "@chakra-ui/react";
+import { orderBy, take, xor } from "lodash";
 import React, { useRef, useState } from "react";
+import toast from "react-hot-toast";
+import { useMutation, useQueryClient } from "react-query";
 import shallow from "zustand/shallow";
 import { useStore } from "../../store/store";
-import { ListItem } from "../../types/api-response";
+import { ApiResponse, Item, ListItem } from "../../types/api-response";
+import { http } from "../../utils/http";
 import { Loading } from "../loading";
 
-const HomePage: React.FC = () => {
-  const { isLoading: defaultListIsLoading, data: defaultList } = useStore(
-    (state) => state.defaultList
-  );
+type CountedListItem = ListItem & { count: number };
 
-  const [updateListItem, addItemToList] = useStore(
-    (state) => [state.updateListItem, state.addItemToList],
-    shallow
-  );
-
-  const { isOpen, onOpen, onClose } = useDisclosure();
-  const btnRef = useRef<any>();
-
-  const [inputItemName, setInputItemName] = useState("");
-
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (inputItemName) {
-      addItemToList(inputItemName);
-      setInputItemName("");
-    }
-  };
-
-  const countedItems: (ListItem & { count: number })[] = [];
-  for (const listItem of defaultList?.items ?? []) {
+function countItems(items: ListItem[]): CountedListItem[] {
+  const countedItems: CountedListItem[] = [];
+  for (const listItem of items) {
     const existingCountedItem = countedItems.find(
       (x) => x.itemId === listItem.itemId
     );
@@ -55,18 +41,172 @@ const HomePage: React.FC = () => {
       });
     }
   }
+  return countedItems;
+}
 
+const HomePage: React.FC = () => {
+  const queryClient = useQueryClient();
+  const { isLoading: defaultListIsLoading, data: defaultList } = useStore(
+    (state) => state.defaultList
+  );
+
+  const { isLoading: itemsIsLoading, data: items } = useStore(
+    (state) => state.items
+  );
+
+  const [setDefualtList] = useStore((state) => [state.setDefaultList], shallow);
+
+  const addItemToListMutation = useMutation(
+    async (itemName: string) => {
+      if (!defaultList) {
+        return;
+      }
+      let item = (items || []).find(
+        (x) => x.name.toLowerCase() == itemName.toLowerCase()
+      );
+      if (!item) {
+        const resp = await http.post(`items`, {
+          name: itemName,
+        });
+        if (!resp.ok) {
+          toast.error("Error creating item");
+          return;
+        }
+        queryClient.invalidateQueries("items.get");
+        const createdItem: ApiResponse<Item> = await resp.json();
+        item = createdItem.data;
+      }
+      if (!item) {
+        toast.error("Error adding item");
+        return;
+      }
+      return (await (
+        await http.post(`lists/${defaultList.id}/items/${item.id}`)
+      ).json()) as ApiResponse<ListItem>;
+    },
+    {
+      onSuccess: (data) => {
+        if (data?.data && defaultList) {
+          defaultList.items.push(data.data);
+          setDefualtList({
+            data: defaultList,
+            isLoading: defaultListIsLoading,
+          });
+        }
+      },
+    }
+  );
+
+  const updateListItemMutation = useMutation(
+    async ({
+      listItem,
+      action,
+    }: {
+      listItem: ListItem;
+      action: "cross" | "uncross";
+    }) => {
+      if (!defaultList) {
+        return;
+      }
+      const resp = await http.put(
+        `lists/${listItem.listId}/items/${listItem.id}`,
+        { crossed: action == "cross" }
+      );
+      return (await resp.json()) as ApiResponse<ListItem>;
+    },
+    {
+      onSuccess: (data) => {
+        if (data?.data && defaultList) {
+          const index = defaultList.items.findIndex(
+            (x) => x.id === data.data.id
+          );
+          if (index !== -1) {
+            defaultList.items[index] = data.data;
+            setDefualtList({
+              data: defaultList,
+              isLoading: defaultListIsLoading,
+            });
+          }
+        }
+      },
+    }
+  );
+
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const btnRef = useRef<any>();
+
+  const [inputItemName, setInputItemName] = useState("");
+  const setInputItemNameWrapper = (val: string) => {
+    setInputItemName(val);
+    let suggestedItems = items;
+    if (val) {
+      suggestedItems = items.filter((x) =>
+        x.name.toLowerCase().includes(val.toLowerCase())
+      );
+    }
+    setSuggestions(take(suggestedItems, 5));
+  };
+
+  const [suggestions, setSuggestions] = useState<Item[]>([]);
+
+  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (inputItemName) {
+      addItemToListMutation.mutate(inputItemName);
+      setInputItemName("");
+    }
+  };
+
+  const addSuggestion = (item: Item) => {
+    addItemToListMutation.mutate(item.name);
+  };
+
+  const crossedItems = (defaultList?.items ?? []).filter((x) => x.crossed);
+  const uncrossedItems = (defaultList?.items ?? []).filter((x) => !x.crossed);
+
+  const crossedCountedItems = orderBy(
+    countItems(crossedItems),
+    (x) => x.updatedAt,
+    "desc"
+  );
+  const uncrossedCountedItems = orderBy(
+    countItems(uncrossedItems),
+    (x) => x.updatedAt,
+    "desc"
+  );
+
+  const listItems = [...uncrossedCountedItems, ...crossedCountedItems];
   return (
     <Flex flexDir={"column"} justifyContent="space-between" width="100%">
       <Flex flexDir="column">
-        {defaultListIsLoading && <Loading />}
-        {countedItems.map((item) => (
-          <Box key={item.id} onClick={() => updateListItem("delete", item)}>
-            <Text fontWeight={"bold"}>
-              {item.item.name}
-              {item.count > 1 && (
+        {defaultListIsLoading || (itemsIsLoading && <Loading />)}
+        {listItems.length === 0 && (
+          <p>Add an item to your shopping list to get started</p>
+        )}
+        {listItems.map((listItem) => (
+          <Box
+            key={listItem.id}
+            display="flex"
+            paddingY="2"
+            onClick={() =>
+              updateListItemMutation.mutate({
+                action: listItem.crossed ? "uncross" : "cross",
+                listItem: listItem,
+              })
+            }
+          >
+            <Checkbox mr="2" isChecked={listItem.crossed}></Checkbox>
+            <Text
+              borderBottom="1px"
+              borderColor="gray.400"
+              flex="1"
+              fontWeight={"bold"}
+              fontSize="lg"
+            >
+              {listItem.item.name}
+              {listItem.count > 1 && (
                 <Badge ml="1" colorScheme="green">
-                  {item.count}
+                  {listItem.count}
                 </Badge>
               )}
             </Text>
@@ -86,16 +226,33 @@ const HomePage: React.FC = () => {
         <DrawerContent>
           <DrawerBody>
             <form onSubmit={(e) => onSubmit(e)}>
-              <Flex>
-                <Input
-                  mr="2"
-                  placeholder="Item..."
-                  value={inputItemName}
-                  onChange={(e) => setInputItemName(e.target.value)}
-                />
-                <Button type="submit">
-                  <AddIcon />
-                </Button>
+              <Flex direction="column">
+                <Box>
+                  {suggestions.map((item) => (
+                    <Button
+                      m="2"
+                      key={item.id}
+                      onClick={() => addSuggestion(item)}
+                    >
+                      {item.name}
+                    </Button>
+                  ))}
+                </Box>
+                <Flex>
+                  <Input
+                    mr="2"
+                    placeholder="Item..."
+                    value={inputItemName}
+                    isDisabled={addItemToListMutation.isLoading}
+                    onChange={(e) => setInputItemNameWrapper(e.target.value)}
+                  />
+                  <Button
+                    type="submit"
+                    isLoading={addItemToListMutation.isLoading}
+                  >
+                    <AddIcon />
+                  </Button>
+                </Flex>
               </Flex>
             </form>
           </DrawerBody>

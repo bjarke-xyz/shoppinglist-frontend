@@ -1,7 +1,7 @@
 import { useKeycloak } from "@react-keycloak/web";
 import { createContext, useContext, useEffect, useState } from "react";
 import { Children } from "../types/children";
-import { setToken } from "../utils";
+import { setToken } from "../utils/http";
 
 export interface KeycloakUserInfo {
   sub: string;

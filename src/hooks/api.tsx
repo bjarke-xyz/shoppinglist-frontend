@@ -1,42 +1,16 @@
-import { useMutation, useQuery } from "react-query";
+import { useMutation, useQuery, useQueryClient } from "react-query";
 import { useStore } from "../store/store";
-import { ApiResponse, DefaultList, Item, List } from "../types/api-response";
-import { getAuthHeaders } from "../utils";
+import {
+  ApiResponse,
+  DefaultList,
+  Item,
+  List,
+  ListItem,
+} from "../types/api-response";
 import { API_URL } from "../utils/contants";
 import shallow from "zustand/shallow";
 import { useEffect } from "react";
-
-async function get(resource: string): Promise<any> {
-  const resp = await fetch(`${API_URL}/api/v1/${resource}`, {
-    headers: getAuthHeaders(),
-  });
-  return resp.json();
-}
-
-export async function post<T>(
-  resource: string,
-  body: any = null
-): Promise<Response> {
-  const resp = await fetch(`${API_URL}/api/v1/${resource}`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application-json",
-      ...getAuthHeaders(),
-    },
-    body: JSON.stringify(body),
-  });
-  return resp;
-}
-
-export async function _delete(resource: string): Promise<Response> {
-  const resp = await fetch(`${API_URL}/api/v1/${resource}`, {
-    method: "DELETE",
-    headers: {
-      ...getAuthHeaders(),
-    },
-  });
-  return resp;
-}
+import { http } from "../utils/http";
 
 export const useGetData = () => {
   const [setItems, setLists, lists, setDefaultList] = useStore(
@@ -50,7 +24,7 @@ export const useGetData = () => {
   );
   const { isLoading: itemsLoading } = useQuery<ApiResponse<Item[]>>(
     "items.get",
-    () => get("items"),
+    () => http.get("items"),
     {
       onSuccess: (data) => {
         setItems({ isLoading: false, data: data.data });
@@ -60,7 +34,7 @@ export const useGetData = () => {
 
   const { isLoading: listsLoading } = useQuery<ApiResponse<List[]>>(
     "lists.get",
-    () => get("lists"),
+    () => http.get("lists"),
     {
       onSuccess: (data) => {
         setLists({ isLoading: false, data: data.data });
@@ -70,16 +44,24 @@ export const useGetData = () => {
 
   const { data: defaultList, isLoading: defaultListLoading } = useQuery<
     ApiResponse<DefaultList>
-  >("lists.default.get", () => get("lists/default"));
+  >("lists.default.get", () => http.get("lists/default"));
 
   useEffect(() => {
-    if (defaultList && lists.data) {
+    if (defaultListLoading) {
+      return;
+    }
+
+    if (defaultList?.data && lists.data) {
       const l = lists.data.find((x) => x.id === defaultList.data.listId);
       if (l) {
         setDefaultList({ isLoading: false, data: l });
+      } else {
+        setDefaultList({ isLoading: false, data: null });
       }
+    } else {
+      setDefaultList({ isLoading: false, data: null });
     }
-  }, [defaultList, lists, setDefaultList]);
+  }, [defaultList, defaultListLoading, lists, setDefaultList]);
 
   return { isLoading: itemsLoading && listsLoading && defaultListLoading };
 };
