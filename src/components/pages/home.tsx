@@ -13,6 +13,7 @@ import {
   Text,
   useDisclosure,
   useMenuItem,
+  Wrap,
 } from "@chakra-ui/react";
 import { orderBy, take, xor } from "lodash";
 import React, { useRef, useState } from "react";
@@ -227,7 +228,7 @@ const HomePage: React.FC = () => {
           <DrawerBody>
             <form onSubmit={(e) => onSubmit(e)}>
               <Flex direction="column">
-                <Box>
+                <Wrap mb="2">
                   {suggestions.map((item) => (
                     <Button
                       m="2"
@@ -237,7 +238,7 @@ const HomePage: React.FC = () => {
                       {item.name}
                     </Button>
                   ))}
-                </Box>
+                </Wrap>
                 <Flex>
                   <Input
                     mr="2"

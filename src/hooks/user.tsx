@@ -12,9 +12,11 @@ export interface KeycloakUserInfo {
 
 export interface UserDetails {
   userInfo: KeycloakUserInfo | null;
+  logout: () => any;
 }
 const defaultUserDetails: UserDetails = {
   userInfo: null,
+  logout: () => {},
 };
 
 export const userDetailsContext =
@@ -32,7 +34,7 @@ export const UserDetailsProvider: React.FC<Children> = (props) => {
     async function fetchData() {
       if (initialized && keycloak.authenticated) {
         const userInfo = await keycloak.loadUserInfo();
-        setUserDetails(userInfo as any);
+        setUserDetails({ userInfo: userInfo as any, logout: keycloak.logout });
       }
     }
     fetchData();

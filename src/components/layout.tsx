@@ -20,6 +20,7 @@ import {
   Input,
   Menu,
   MenuButton,
+  MenuDivider,
   MenuItem,
   MenuList,
   useDisclosure,
@@ -36,15 +37,25 @@ import { List } from "../types/api-response";
 import { http } from "../utils/http";
 import toast from "react-hot-toast";
 import { FormEvent, useRef, useState } from "react";
+import { useUserDetails } from "../hooks/user";
 
 export const Layout: React.FC<Children> = (props) => {
   return (
-    <VStack display="flex" flexDir="column" height="100%" overflowY="hidden">
+    <VStack
+      display="flex"
+      flexDir="column"
+      height="100%"
+      overflowY="hidden"
+      backgroundImage="/charlie-brown.svg"
+    >
       <Header />
       <Container
         flex="1 1 auto"
-        height="calc(100vh - (80px) - 1rem)"
-        overflowY="scroll"
+        height="calc(100vh - 8rem)"
+        overflowY="auto"
+        bgColor="white"
+        padding="2"
+        borderRadius="md"
         // border="1px solid black"
       >
         <Box height="100%" display="flex">
@@ -57,6 +68,7 @@ export const Layout: React.FC<Children> = (props) => {
 };
 
 const Header: React.FC = () => {
+  const userDetails = useUserDetails();
   const { isLoading } = useGetData();
   const [defaultList, lists] = useStore(
     (state) => [state.defaultList, state.lists],
@@ -135,7 +147,13 @@ const Header: React.FC = () => {
   }
 
   return (
-    <Container justifySelf="flex-start" backgroundColor="#cdcdcd">
+    <Container
+      justifySelf="flex-start"
+      backgroundColor="white"
+      maxWidth="unset"
+      boxShadow="md"
+      padding="2"
+    >
       <Flex width="100%" justifyContent={"space-between"}>
         <Box>
           <Menu autoSelect={false}>
@@ -213,6 +231,8 @@ const Header: React.FC = () => {
               >
                 Delete shopping list
               </MenuItem>
+              <MenuDivider />
+              <MenuItem onClick={() => userDetails.logout()}>Logout</MenuItem>
             </MenuList>
           </Menu>
         </Box>
@@ -251,7 +271,12 @@ const Footer: React.FC = () => {
   const { view, setView } = useAppPage();
   const activeColor = (v: View) => (v === view ? "green.400" : undefined);
   return (
-    <Container justifySelf="flex-end" backgroundColor="#cdcdcd">
+    <Container
+      justifySelf="flex-end"
+      backgroundColor="white"
+      maxWidth="unset"
+      padding="2"
+    >
       <Flex justifyContent="space-evenly">
         <Button onClick={() => setView("home")} color={activeColor("home")}>
           Home
