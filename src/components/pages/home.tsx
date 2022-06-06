@@ -181,7 +181,7 @@ const HomePage: React.FC = () => {
     <Flex flexDir={"column"} justifyContent="space-between" width="100%">
       <Flex flexDir="column">
         {defaultListIsLoading || (itemsIsLoading && <Loading />)}
-        {listItems.length === 0 && (
+        {!defaultListIsLoading && listItems.length === 0 && (
           <p>Add an item to your shopping list to get started</p>
         )}
         {listItems.map((listItem) => (
