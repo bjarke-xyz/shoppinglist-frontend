@@ -210,7 +210,7 @@ const Header: React.FC = () => {
                 }
                 icon={<CheckIcon />}
               >
-                Remove crossed items
+                Remove checked items
               </MenuItem>
               <MenuItem
                 isDisabled={defaultList.isLoading}
