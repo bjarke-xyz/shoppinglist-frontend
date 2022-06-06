@@ -1,335 +1,127 @@
-/* eslint-disable no-console */
-import { action, computed, createStore, thunk } from "easy-peasy";
-import _ from "lodash";
-import authService from "../services/auth.service";
-import itemsService from "../services/items.service";
-import listsService from "../services/lists.service";
-import { ApiError } from "../types/API";
-import { Item } from "../types/items";
-import { SSOError } from "../types/SSO";
-import { API_URL } from "../utils/constants";
-import { StoreModel } from "./models";
+import create from "zustand";
+import { devtools } from "zustand/middleware";
+import { ApiResponse, Item, List, ListItem } from "../types/api-response";
+import { http } from "../utils/http";
 
-export const store = createStore<StoreModel>({
-  fetcher: thunk(async (actions, payload) => {
-    const ssoError = await actions.auth.fetch();
-    if (ssoError) {
-      console.log({ ssoError });
-      return [false, ssoError] as [boolean, SSOError];
-    }
+interface LoadingData<T> {
+  isLoading: boolean;
+  data: T;
+}
 
-    await Promise.allSettled([actions.items.fetch(), actions.lists.fetch()]);
+interface Store {
+  items: LoadingData<Item[]>;
+  setItems: (items: LoadingData<Item[]>) => any;
 
-    // if (errors.some((x) => x !== null)) {
-    //   return [false, errors] as [boolean, (ApiError | null)[]];
-    // }
-    return [true, null] as [boolean, null];
-  }),
-  core: {
-    loaded: false,
-    setLoaded: action((state, payload) => {
-      state.loaded = payload;
-    }),
+  lists: LoadingData<List[]>;
+  setLists: (items: LoadingData<List[]>) => any;
 
-    sse: null,
-    sseConnectTry: 0,
-    sseReconnectTimeoutId: null,
-    sseEventHandlers: {
-      LIST_UPDATED: [],
-      LIST_ITEMS_ADDED: [],
-      LIST_ITEMS_UPDATED: [],
-      LIST_ITEMS_REMOVED: [],
-    },
-    addSseEventHandler: action((state, payload) => {
-      state.sseEventHandlers[payload.event].push(payload.handler);
-    }),
-    removeSseEventHandler: action((state, payload) => {
-      const handlers = state.sseEventHandlers[payload.event];
-      const index = handlers.indexOf(payload.handler);
-      if (index !== -1) {
-        handlers.splice(index, 1);
-      }
-    }),
-    sseIsConnecting: false,
-    setSseIsConnecting: action((state, payload) => {
-      state.sseIsConnecting = payload;
-    }),
-    setSseConnectTry: action((state, payload) => {
-      state.sseConnectTry = payload;
-    }),
-    sseConnect: thunk(async (actions, payload, helpers) => {
-      const { sseIsConnecting } = helpers.getState();
-      if (sseIsConnecting) {
-        return;
-      }
+  defaultList: LoadingData<List | null>;
+  setDefaultList: (defaultList: LoadingData<List | null>) => any;
+  // updateListItem: (
+  //   action: UpdateListItemAction,
+  //   listItem: ListItem
+  // ) => Promise<any>;
 
-      async function doConnect() {
-        console.log("Connecting to SSE");
-        actions.setSseIsConnecting(true);
-        const state = helpers.getState();
-        if (state.sse == null || state.sse.readyState === EventSource.CLOSED) {
-          const [sseTicket, apiErr] = await authService.getSseTicket();
-          if (apiErr != null) {
-            console.log("Could not get sse ticket", apiErr);
-          }
-          state.sse = new EventSource(
-            `${API_URL}/api/v1/sse/events?ticket=${sseTicket}`
-          );
-          state.sse.onopen = (event) => {
-            actions.setSseIsConnecting(false);
-            actions.setSseConnectTry(0);
-          };
-          state.sse.onmessage = (event) => {
-            console.log(JSON.parse(event.data));
-            actions.setSseConnectTry(0);
-          };
-          state.sse.onerror = (err) => {
-            actions.setSseIsConnecting(false);
-            console.error(err);
-            if (state.sseConnectTry < 20) {
-              actions.setSseConnectTry(state.sseConnectTry + 1);
-            } else {
-              actions.setSseConnectTry(0);
-            }
-            const waitTimeMs = state.sseConnectTry * 100;
-            console.log(`waiting ${waitTimeMs}ms before reconnecting`);
-            clearTimeout(state.sseReconnectTimeoutId as number | undefined);
-            state.sseReconnectTimeoutId = setTimeout(() => {
-              doConnect();
-            }, waitTimeMs);
-          };
-        }
-      }
-      await doConnect();
-    }),
-  },
-  auth: {
-    user: null,
-    setUser: action((state, payload) => {
-      state.user = payload;
-    }),
-    fetch: thunk(async (actions) => {
-      const [user, userErr] = await authService.getUserInfo();
-      if (user) {
-        actions.setUser(user);
-        return null;
-      }
-      if (userErr) {
-        actions.setUser(null);
-        return userErr;
-      }
-      return null;
-    }),
-  },
-  items: {
-    items: [],
-    set: action((state, payload) => {
-      state.items = payload;
-    }),
-    append: action((state, payload) => {
-      state.items.push(payload);
-    }),
-    removeById: action((state, payload) => {
-      const index = state.items.findIndex((x) => x.id === payload);
-      if (index !== -1) {
-        state.items.splice(index, 1);
-      }
-    }),
-    fetch: thunk(async (actions) => {
-      const [items, error] = await itemsService.getItems();
-      if (error) {
-        return error;
-      }
-      if (items) {
-        actions.set(items);
-      }
-      return null;
-    }),
-    addItem: thunk(async (actions, payload) => {
-      const [item, error] = await itemsService.addItem(payload);
-      if (error) {
-        return [null, error] as [null, ApiError];
-      }
-      if (item) {
-        actions.append(item);
-      }
-      return [item, null] as [Item, null];
-    }),
-    removeItem: thunk(async (actions, payload) => {
-      const error = await itemsService.deleteItem(payload.id);
-      if (error) {
-        return error;
-      }
-      actions.removeById(payload.id);
-      return null;
-    }),
-  },
-  lists: {
-    lists: [],
-    defaultListStore: null,
-    defaultListFetched: false,
-    defaultList: computed((state) => {
-      const defaultList = state.lists.find(
-        (x) => x.id === state.defaultListStore?.listId
-      );
-      return defaultList || null;
-    }),
-    setAll: action((state, payload) => {
-      state.lists = payload;
-    }),
-    set: action((state, payload) => {
-      const index = state.lists.findIndex((x) => x.id === payload.id);
-      if (index !== -1) {
-        state.lists[index] = payload;
-      } else {
-        state.lists.push(payload);
-      }
-    }),
-    setItem: action((state, payload) => {
-      const listIndex = state.lists.findIndex((x) => x.id === payload.list.id);
-      if (listIndex !== -1) {
-        const list = state.lists[listIndex];
-        const itemIndex = list.items.findIndex(
-          (x) => x.id === payload.listItem.id
-        );
-        if (itemIndex !== -1) {
-          list.items[itemIndex] = payload.listItem;
-        }
-      }
-    }),
-    removeItem: action((state, payload) => {
-      const listIndex = state.lists.findIndex((x) => x.id === payload.list.id);
-      if (listIndex !== -1) {
-        const list = state.lists[listIndex];
-        const itemIndex = list.items.findIndex(
-          (x) => x.id === payload.listItem.id
-        );
-        if (itemIndex !== -1) {
-          list.items.splice(itemIndex, 1);
-        }
-      }
-    }),
-    setDefaultList: action((state, payload) => {
-      state.defaultListStore = payload;
-    }),
-    append: action((state, payload) => {
-      state.lists.push(payload);
-    }),
-    removeById: action((state, payload) => {
-      const index = state.lists.findIndex((x) => x.id === payload);
-      if (index !== -1) {
-        state.lists.splice(index, 1);
-      }
-    }),
-    setDefaultListFetched: action((state, payload) => {
-      state.defaultListFetched = true;
-    }),
-    fetch: thunk(async (actions) => {
-      const [lists, error] = await listsService.getLists();
-      if (error) {
-        return error;
-      }
-      if (lists) {
-        actions.setAll(lists);
-      }
-      const [
-        defaultList,
-        defaultListError,
-      ] = await listsService.getDefaultList();
-      actions.setDefaultListFetched(true);
-      if (defaultListError) {
-        return defaultListError;
-      }
-      if (defaultList) {
-        actions.setDefaultList(defaultList);
-      }
-      return null;
-    }),
-    addList: thunk(async (actions, payload) => {
-      const [list, error] = await listsService.addList(payload);
-      if (error) {
-        return error;
-      }
-      if (list) {
-        actions.append(list);
-      }
-      return null;
-    }),
-    updateList: thunk(async (actions, payload) => {
-      const [list, error] = await listsService.updateList(payload);
-      if (error) {
-        return error;
-      }
-      if (list) {
-        actions.set(list);
-      }
-      return null;
-    }),
-    updateDefaultList: thunk(async (actions, payload) => {
-      const [defaultList, error] = await listsService.setDefaultList(payload);
-      if (error) {
-        return error;
-      }
-      if (defaultList) {
-        actions.setDefaultList(defaultList);
-      }
-      return null;
-    }),
-    removeList: thunk(async (actions, payload) => {
-      const error = await listsService.deleteList(payload.id);
-      if (error) {
-        return error;
-      }
-      actions.removeById(payload.id);
-      return null;
-    }),
+  // addItemToList: (itemName: string) => Promise<any>;
+}
 
-    addToList: thunk(async (actions, payload) => {
-      const [listItem, error] = await listsService.addToList({
-        listId: payload.list.id,
-        itemId: payload.item.id,
-      });
-      if (error) {
-        return error;
-      }
+type UpdateListItemAction = "cross" | "uncross" | "delete";
 
-      if (listItem) {
-        listItem.item = payload.item;
-        const clonedList = _.cloneDeep(payload.list);
-        if (_.isNil(clonedList.items)) {
-          clonedList.items = [];
-        }
-        clonedList.items.push(listItem);
-        actions.set(clonedList);
-      }
-      return null;
-    }),
+export const useStore = create<Store>()(
+  devtools((set, get) => ({
+    items: { isLoading: true, data: [] },
+    setItems: (input) => set({ items: input }),
 
-    removeFromList: thunk(async (actions, payload) => {
-      if (!payload.listItem.crossed) {
-        const listItemClone = _.cloneDeep(payload.listItem);
-        listItemClone.crossed = true;
-        const [updatedListItem, error] = await listsService.updateListItem(
-          listItemClone
-        );
-        if (error) {
-          return error;
-        }
+    lists: { isLoading: true, data: [] },
+    setLists: (input) => set({ lists: input }),
 
-        if (updatedListItem) {
-          actions.setItem({ list: payload.list, listItem: updatedListItem });
-        }
-      } else {
-        const error = await listsService.removeFromList({
-          listId: payload.list.id,
-          listItemId: payload.listItem.id,
-        });
-        if (error) {
-          return error;
-        }
-        actions.removeItem({ list: payload.list, listItem: payload.listItem });
-      }
-      return null;
-    }),
-  },
-});
+    defaultList: { isLoading: true, data: null },
+    setDefaultList: (input) => set({ defaultList: input }),
+
+    // addItemToList: async (itemName: string) => {
+    //   const defaultList = get().defaultList?.data;
+    //   if (!defaultList) {
+    //     return;
+    //   }
+    //   const item = get().items?.data?.find(
+    //     (x) => x.name.toLowerCase() === itemName.toLowerCase()
+    //   );
+    //   if (!item) {
+    //     // TODO: create item if not found
+    //     return;
+    //   }
+    //   const resp = await http.post(`lists/${defaultList.id}/items/${item.id}`);
+    //   if (resp.ok) {
+    //     const addedItem = (await resp.json()) as ApiResponse<ListItem>;
+    //     if (addedItem?.data) {
+    //       defaultList.items.push(addedItem.data);
+    //       set({ defaultList: { isLoading: false, data: defaultList } });
+    //     }
+    //   }
+    // },
+
+    // updateListItem: async (
+    //   action: UpdateListItemAction,
+    //   listItem: ListItem
+    // ) => {
+    //   switch (action) {
+    //     case "cross":
+    //     case "uncross":
+    //       {
+    //         const resp = await put(
+    //           `lists/${listItem.listId}/items/${listItem.id}`,
+    //           {
+    //             crossed: action == "cross",
+    //           }
+    //         );
+    //         if (!resp.ok) {
+    //           console.log(resp);
+    //           toast.error("Something went wrong");
+    //           return;
+    //         }
+    //         const defaultList = get().defaultList;
+    //         if (defaultList.data) {
+    //           const responseObj: ApiResponse<ListItem> = await resp.json();
+    //           const index = defaultList.data.items.findIndex(
+    //             (x) => x.id == listItem.id
+    //           );
+    //           if (index !== -1 && responseObj.data) {
+    //             defaultList.data.items[index] = responseObj.data;
+    //             set({
+    //               defaultList: {
+    //                 data: defaultList.data,
+    //                 isLoading: defaultList.isLoading,
+    //               },
+    //             });
+    //           }
+    //         }
+    //       }
+    //       break;
+    //     case "delete":
+    //       {
+    //         const resp = await _delete(
+    //           `lists/${listItem.listId}/items/${listItem.id}`
+    //         );
+    //         if (!resp.ok) {
+    //           console.log(resp);
+    //           toast.error("Something went wrong");
+    //           return;
+    //         }
+    //         const defaultList = get().defaultList;
+    //         if (defaultList.data) {
+    //           defaultList.data.items = defaultList.data.items.filter(
+    //             (x) => x.id !== listItem.id
+    //           );
+    //           set({
+    //             defaultList: {
+    //               data: defaultList.data,
+    //               isLoading: defaultList.isLoading,
+    //             },
+    //           });
+    //         }
+    //       }
+    //       break;
+    //   }
+    // },
+  }))
+);
